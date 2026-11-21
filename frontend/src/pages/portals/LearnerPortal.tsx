@@ -8,21 +8,31 @@ import { AssessmentTakingView } from '../../components/assessment/AssessmentTaki
 import { AssessmentResultView } from '../../components/assessment/AssessmentResultView';
 import { AssessmentHistoryTable } from '../../components/assessment/AssessmentHistoryTable';
 import { CompetencyGapView } from '../../components/assessment/CompetencyGapView';
+import { RecommendationList } from '../../components/recommendations/RecommendationList';
+import { LearningPathView } from '../../components/recommendations/LearningPathView';
 import {
   Award,
   BookOpen,
   CheckCircle,
+  Compass,
   FileQuestion,
   History,
   LayoutDashboard,
   LogOut,
   RefreshCw,
+  Sparkles,
   Target,
   User as UserIcon,
   XCircle,
 } from 'lucide-react';
 
-type TabType = 'dashboard' | 'assessments' | 'gap-analysis' | 'history';
+type TabType =
+  | 'dashboard'
+  | 'recommendations'
+  | 'learning-path'
+  | 'assessments'
+  | 'gap-analysis'
+  | 'history';
 
 export const LearnerPortal: React.FC = () => {
   const { user, session, logout } = useAuth();
@@ -141,6 +151,38 @@ export const LearnerPortal: React.FC = () => {
 
           <button
             onClick={() => {
+              setActiveTab('recommendations');
+              setActiveQuizId(null);
+              setCurrentResult(null);
+            }}
+            className={`flex items-center space-x-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition shrink-0 ${
+              activeTab === 'recommendations'
+                ? 'bg-indigo-600 text-white shadow'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <Sparkles className="w-4 h-4" />
+            <span>Recommended Courses</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveTab('learning-path');
+              setActiveQuizId(null);
+              setCurrentResult(null);
+            }}
+            className={`flex items-center space-x-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition shrink-0 ${
+              activeTab === 'learning-path'
+                ? 'bg-indigo-600 text-white shadow'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <Compass className="w-4 h-4" />
+            <span>Learning Path</span>
+          </button>
+
+          <button
+            onClick={() => {
               setActiveTab('assessments');
               setActiveQuizId(null);
               setCurrentResult(null);
@@ -210,20 +252,27 @@ export const LearnerPortal: React.FC = () => {
                   </p>
                 </div>
 
-                <div className="flex items-center space-x-3">
+                <div className="flex flex-wrap items-center gap-3">
+                  <button
+                    onClick={() => setActiveTab('recommendations')}
+                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold shadow transition flex items-center space-x-1.5"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    <span>View Recommended Courses</span>
+                  </button>
+                  <button
+                    onClick={() => setActiveTab('learning-path')}
+                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold border border-slate-700 transition flex items-center space-x-1.5"
+                  >
+                    <Compass className="w-3.5 h-3.5" />
+                    <span>Learning Roadmap</span>
+                  </button>
                   <button
                     onClick={() => setActiveTab('assessments')}
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold shadow transition flex items-center space-x-1.5"
+                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold border border-slate-700 transition flex items-center space-x-1.5"
                   >
                     <FileQuestion className="w-3.5 h-3.5" />
                     <span>Take Assessment</span>
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('gap-analysis')}
-                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold border border-slate-700 transition flex items-center space-x-1.5"
-                  >
-                    <Target className="w-3.5 h-3.5" />
-                    <span>Gap Analysis</span>
                   </button>
                 </div>
               </div>
@@ -304,9 +353,15 @@ export const LearnerPortal: React.FC = () => {
                     </div>
 
                     {dashboardData.enrolled_courses.length === 0 ? (
-                      <p className="text-xs text-slate-400 italic py-6 text-center">
-                        No active course enrollments.
-                      </p>
+                      <div className="text-center py-6 space-y-2">
+                        <p className="text-xs text-slate-400 italic">No active course enrollments.</p>
+                        <button
+                          onClick={() => setActiveTab('recommendations')}
+                          className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold"
+                        >
+                          Explore Recommended Courses →
+                        </button>
+                      </div>
                     ) : (
                       <div className="space-y-3">
                         {dashboardData.enrolled_courses.map((course) => (
@@ -423,7 +478,23 @@ export const LearnerPortal: React.FC = () => {
           </div>
         )}
 
-        {/* TAB 2: ASSESSMENTS (CATALOGUE / TEST TAKING / RESULTS) */}
+        {/* TAB 2: RECOMMENDED COURSES */}
+        {activeTab === 'recommendations' && (
+          <RecommendationList
+            sessionToken={token}
+            onEnrollmentSuccess={fetchDashboard}
+          />
+        )}
+
+        {/* TAB 3: LEARNING PATH ROADMAP */}
+        {activeTab === 'learning-path' && (
+          <LearningPathView
+            sessionToken={token}
+            onEnrollmentSuccess={fetchDashboard}
+          />
+        )}
+
+        {/* TAB 4: ASSESSMENTS (CATALOGUE / TEST TAKING / RESULTS) */}
         {activeTab === 'assessments' && (
           <div>
             {currentResult ? (
@@ -448,7 +519,7 @@ export const LearnerPortal: React.FC = () => {
           </div>
         )}
 
-        {/* TAB 3: COMPETENCY GAP RADAR */}
+        {/* TAB 5: COMPETENCY GAP RADAR */}
         {activeTab === 'gap-analysis' && (
           <CompetencyGapView
             sessionToken={token}
@@ -460,7 +531,7 @@ export const LearnerPortal: React.FC = () => {
           />
         )}
 
-        {/* TAB 4: ATTEMPT HISTORY */}
+        {/* TAB 6: ATTEMPT HISTORY */}
         {activeTab === 'history' && (
           <AssessmentHistoryTable sessionToken={token} />
         )}

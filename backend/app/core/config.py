@@ -9,7 +9,7 @@ import json
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "SkillBridge AI API"
-    VERSION: str = "0.1.0"
+    VERSION: str = "0.2.0"
     API_V1_STR: str = "/api/v1"
 
     # CORS settings
@@ -31,21 +31,33 @@ class Settings(BaseSettings):
             return [i.strip() for i in v.split(",") if i.strip()]
         return v
 
-    # Supabase & Database Placeholders (Phase 0)
+    # Supabase & Database Configuration (Phase 2)
     SUPABASE_URL: str = Field(
         default="https://placeholder-project.supabase.co",
-        description="Supabase project URL placeholder",
+        description="Supabase project URL",
     )
     SUPABASE_KEY: str = Field(
         default="placeholder-anon-key",
-        description="Supabase Anon/Service Key placeholder",
+        description="Supabase Anon/Public Key",
+    )
+    SUPABASE_JWT_SECRET: str = Field(
+        default="placeholder-jwt-secret-for-development-and-testing-min-32-chars-long",
+        description="Supabase JWT secret for symmetric HMAC (HS256) signature verification",
+    )
+    SUPABASE_JWT_ALGORITHM: str = Field(
+        default="HS256",
+        description="Expected JWT algorithm: HS256 (symmetric) or RS256/ES256 (asymmetric JWKS)",
+    )
+    SUPABASE_JWT_AUDIENCE: str = Field(
+        default="authenticated",
+        description="Expected JWT audience (aud) claim from Supabase Auth",
     )
     DATABASE_URL: str = Field(
         default="postgresql+psycopg://postgres:placeholder_password@db.placeholder-project.supabase.co:5432/postgres",
         description="PostgreSQL / pgvector connection URL placeholder",
     )
 
-    # LLM Provider Placeholders (Phase 0)
+    # LLM Provider Placeholders
     OPENAI_API_KEY: str = Field(
         default="sk-placeholder-openai-key",
         description="OpenAI API Key placeholder",

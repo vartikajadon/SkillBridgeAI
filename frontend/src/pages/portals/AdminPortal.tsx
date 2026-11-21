@@ -1,139 +1,267 @@
-import React, { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
-import { useAuth, UserProfile } from '../../context/AuthContext';
-import { Shield, Users, LogOut, User as UserIcon, Loader2 } from 'lucide-react';
+import React, { useState } from 'react';
+import { useAuth } from '../../context/AuthContext';
+import { AdminOverviewCharts } from '../../components/admin/AdminOverviewCharts';
+import { AdminUserDirectory } from '../../components/admin/AdminUserDirectory';
+import { AdminCatalogueViewer } from '../../components/admin/AdminCatalogueViewer';
+import { AdminReportsCenter } from '../../components/admin/AdminReportsCenter';
+import { 
+  BarChart3, 
+  Users, 
+  BookOpen, 
+  FileText, 
+  ShieldAlert,
+  LogOut,
+  RefreshCw,
+  Clock,
+  UserCheck
+} from 'lucide-react';
+type AdminTab = 'overview' | 'users' | 'catalogue' | 'reports' | 'audit';
+
+interface AuditLog {
+  id: string;
+  actor_id: string;
+  actor_name: string;
+  action: string;
+  entity_type: string;
+  entity_id?: string;
+  ip_address?: string;
+  created_at: string;
+}
 
 export const AdminPortal: React.FC = () => {
   const { user, session, logout } = useAuth();
-  const [usersList, setUsersList] = useState<UserProfile[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<AdminTab>('overview');
+  const [auditLogs, setAuditLogs] = useState<AuditLog[]>([]);
+  const [loadingAudit, setLoadingAudit] = useState(false);
+  const [auditError, setAuditError] = useState<string | null>(null);
 
-  useEffect(() => {
-    const fetchUsers = async () => {
-      if (!session?.access_token) return;
-      try {
-        const res = await fetch('/api/v1/auth/admin/users', {
-          headers: {
-            Authorization: `Bearer ${session.access_token}`,
-          },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setUsersList(data);
-        }
-      } catch {
-        // Ignored
-      } finally {
-        setIsLoading(false);
+  const token = session?.access_token || '';
+
+  const fetchAuditLogs = async () => {
+    if (!token) return;
+    try {
+      setLoadingAudit(true);
+      setAuditError(null);
+      const res = await fetch('/api/v1/dashboard/admin', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!res.ok) {
+        throw new Error(`Failed to fetch audit logs (${res.status})`);
       }
-    };
-    fetchUsers();
-  }, [session]);
+      const data = await res.json();
+      setAuditLogs(data.recent_audit_logs || []);
+    } catch (err: unknown) {
+      const errorMsg = err instanceof Error ? err.message : 'Failed to fetch audit logs';
+      setAuditError(errorMsg);
+    } finally {
+      setLoadingAudit(false);
+    }
+  };
+
+  const handleTabChange = (tab: AdminTab) => {
+    setActiveTab(tab);
+    if (tab === 'audit' && auditLogs.length === 0) {
+      fetchAuditLogs();
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
-      <header className="border-b border-slate-800 bg-slate-900/60 backdrop-blur sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <span className="text-lg font-bold text-white">SkillBridge AI</span>
-            <span className="text-xs px-2 py-0.5 rounded-full bg-rose-950 text-rose-300 border border-rose-800 font-medium">
-              Administrator Console
-            </span>
+    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col">
+      {/* Top Header */}
+      <header className="border-b border-slate-800 bg-slate-900/80 backdrop-blur sticky top-0 z-30 px-6 py-4 flex items-center justify-between">
+        <div className="flex items-center space-x-3">
+          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+            <ShieldAlert className="w-6 h-6 text-white" />
           </div>
+          <div>
+            <div className="flex items-center space-x-2">
+              <span className="font-bold text-lg tracking-tight bg-gradient-to-r from-white via-slate-200 to-slate-400 bg-clip-text text-transparent">
+                SkillBridge AI
+              </span>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 font-semibold border border-amber-500/30">
+                Governance Console
+              </span>
+            </div>
+            <p className="text-xs text-slate-400">National Competency & Executive Telemetry Platform</p>
+          </div>
+        </div>
 
-          <div className="flex items-center space-x-4">
-            <Link
-              to="/profile"
-              className="flex items-center space-x-1.5 text-xs text-slate-300 hover:text-white bg-slate-800 px-3 py-1.5 rounded-md border border-slate-700 transition"
-            >
-              <UserIcon className="w-3.5 h-3.5 text-rose-400" />
-              <span>{user?.full_name}</span>
-            </Link>
-            <button
-              onClick={() => logout()}
-              className="p-1.5 text-slate-400 hover:text-rose-400 rounded-md hover:bg-slate-800 transition"
-              title="Sign Out"
-            >
-              <LogOut className="w-4 h-4" />
-            </button>
+        <div className="flex items-center space-x-4">
+          <div className="text-right hidden sm:block">
+            <p className="text-sm font-medium text-slate-200">{user?.full_name || 'System Administrator'}</p>
+            <p className="text-xs text-slate-400">{user?.email} • {user?.department || 'Executive Office'}</p>
           </div>
+          <button
+            onClick={logout}
+            className="p-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white transition-colors"
+            title="Sign Out"
+          >
+            <LogOut className="w-5 h-5" />
+          </button>
         </div>
       </header>
 
-      <main className="max-w-7xl mx-auto px-4 py-8 space-y-6">
-        <div className="bg-gradient-to-r from-rose-950/60 to-slate-900 border border-rose-900/60 rounded-2xl p-6 shadow-xl">
-          <div className="flex items-center space-x-2 text-rose-400 text-xs font-semibold uppercase tracking-wider mb-2">
-            <Shield className="w-4 h-4" />
-            <span>DoPT System Administration</span>
-          </div>
-          <h1 className="text-2xl font-bold text-white">{user?.full_name}</h1>
-          <p className="text-xs text-slate-400 mt-1">
-            Enterprise Governance • Role Provisioning & Privileged Access Management
-          </p>
+      {/* Main Navigation Tabs */}
+      <div className="border-b border-slate-800 bg-slate-900/40 px-6">
+        <div className="flex space-x-1 sm:space-x-4 overflow-x-auto py-2">
+          <button
+            onClick={() => handleTabChange('overview')}
+            className={`flex items-center space-x-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'overview'
+                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <BarChart3 className="w-4 h-4" />
+            <span>Executive Overview</span>
+          </button>
+
+          <button
+            onClick={() => handleTabChange('users')}
+            className={`flex items-center space-x-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'users'
+                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <Users className="w-4 h-4" />
+            <span>User Directory</span>
+          </button>
+
+          <button
+            onClick={() => handleTabChange('catalogue')}
+            className={`flex items-center space-x-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'catalogue'
+                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <BookOpen className="w-4 h-4" />
+            <span>Catalogue Inspector</span>
+          </button>
+
+          <button
+            onClick={() => handleTabChange('reports')}
+            className={`flex items-center space-x-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'reports'
+                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <FileText className="w-4 h-4" />
+            <span>Reports & Exports</span>
+          </button>
+
+          <button
+            onClick={() => handleTabChange('audit')}
+            className={`flex items-center space-x-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${
+              activeTab === 'audit'
+                ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <Clock className="w-4 h-4" />
+            <span>Security Audit Logs</span>
+          </button>
         </div>
+      </div>
 
-        {/* User Management Section */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-slate-200 flex items-center space-x-2">
-              <Users className="w-4 h-4 text-indigo-400" />
-              <span>Civil Service User Directory (Role Management)</span>
-            </h3>
-            <span className="text-xs text-slate-500 font-mono">
-              {usersList.length} Accounts Registered
-            </span>
-          </div>
-
-          {isLoading ? (
-            <div className="py-8 text-center text-slate-500 flex items-center justify-center space-x-2 text-xs">
-              <Loader2 className="w-4 h-4 animate-spin text-indigo-400" />
-              <span>Loading user directory...</span>
+      {/* Main Content Area */}
+      <main className="flex-1 p-6 max-w-7xl w-full mx-auto">
+        {activeTab === 'overview' && <AdminOverviewCharts sessionToken={token} />}
+        {activeTab === 'users' && <AdminUserDirectory sessionToken={token} />}
+        {activeTab === 'catalogue' && <AdminCatalogueViewer />}
+        {activeTab === 'reports' && <AdminReportsCenter sessionToken={token} />}
+        {activeTab === 'audit' && (
+          <div className="space-y-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h2 className="text-xl font-bold text-white flex items-center space-x-2">
+                  <Clock className="w-5 h-5 text-indigo-400" />
+                  <span>Platform Security Audit Logs</span>
+                </h2>
+                <p className="text-sm text-slate-400">Chronological immutable record of security and administrative actions</p>
+              </div>
+              <button
+                onClick={fetchAuditLogs}
+                disabled={loadingAudit}
+                className="flex items-center space-x-1.5 px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white text-xs font-medium border border-slate-700 transition"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${loadingAudit ? 'animate-spin' : ''}`} />
+                <span>Refresh Log</span>
+              </button>
             </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs text-slate-300">
-                <thead className="text-[11px] uppercase bg-slate-950/80 text-slate-500 border-b border-slate-800">
-                  <tr>
-                    <th className="py-2.5 px-3">Name</th>
-                    <th className="py-2.5 px-3">Email</th>
-                    <th className="py-2.5 px-3">Role</th>
-                    <th className="py-2.5 px-3">Department</th>
-                    <th className="py-2.5 px-3">Employee ID</th>
-                    <th className="py-2.5 px-3">Status</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-800/60">
-                  {usersList.map((u) => (
-                    <tr key={u.id} className="hover:bg-slate-800/40">
-                      <td className="py-2.5 px-3 font-medium text-white">{u.full_name}</td>
-                      <td className="py-2.5 px-3 font-mono text-slate-400">{u.email}</td>
-                      <td className="py-2.5 px-3">
-                        <span
-                          className={`px-2 py-0.5 rounded text-[10px] font-semibold uppercase ${
-                            u.role === 'admin'
-                              ? 'bg-rose-950 text-rose-300 border border-rose-800'
-                              : u.role === 'trainer'
-                              ? 'bg-cyan-950 text-cyan-300 border border-cyan-800'
-                              : 'bg-emerald-950 text-emerald-300 border border-emerald-800'
-                          }`}
-                        >
-                          {u.role}
-                        </span>
-                      </td>
-                      <td className="py-2.5 px-3 text-slate-400">{u.department || '—'}</td>
-                      <td className="py-2.5 px-3 font-mono text-slate-400">{u.employee_id || '—'}</td>
-                      <td className="py-2.5 px-3">
-                        <span className={u.is_active ? 'text-emerald-400' : 'text-rose-400'}>
-                          {u.is_active ? 'Active' : 'Deactivated'}
-                        </span>
-                      </td>
+
+            {auditError && (
+              <div className="p-4 rounded-xl bg-rose-500/10 border border-rose-500/20 text-rose-400 text-sm">
+                {auditError}
+              </div>
+            )}
+
+            <div className="rounded-xl border border-slate-800 bg-slate-900/60 overflow-hidden">
+              <div className="overflow-x-auto max-h-[600px] overflow-y-auto">
+                <table className="w-full text-left text-xs">
+                  <thead className="bg-slate-950/80 sticky top-0 border-b border-slate-800 text-slate-400 uppercase tracking-wider font-semibold">
+                    <tr>
+                      <th className="py-3 px-4">Timestamp</th>
+                      <th className="py-3 px-4">Action</th>
+                      <th className="py-3 px-4">Resource</th>
+                      <th className="py-3 px-4">Actor</th>
+                      <th className="py-3 px-4">IP Address</th>
+                      <th className="py-3 px-4">Metadata</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-800/60 font-mono text-slate-300">
+                    {loadingAudit && auditLogs.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="text-center py-12 text-slate-500 font-sans">
+                          Loading audit records...
+                        </td>
+                      </tr>
+                    ) : auditLogs.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="text-center py-12 text-slate-500 font-sans">
+                          No audit logs found.
+                        </td>
+                      </tr>
+                    ) : (
+                      auditLogs.map((log) => (
+                        <tr key={log.id} className="hover:bg-slate-800/30">
+                          <td className="py-2.5 px-4 text-slate-400 whitespace-nowrap">
+                            {new Date(log.created_at).toLocaleString()}
+                          </td>
+                          <td className="py-2.5 px-4 font-semibold text-indigo-300 whitespace-nowrap">
+                            {log.action}
+                          </td>
+                          <td className="py-2.5 px-4 whitespace-nowrap">
+                            <span className="text-slate-300">{log.entity_type}</span>
+                            {log.entity_id && (
+                              <span className="text-slate-500 ml-1">({log.entity_id.slice(0, 8)}...)</span>
+                            )}
+                          </td>
+                          <td className="py-2.5 px-4 text-slate-400 whitespace-nowrap">
+                            <div className="flex items-center space-x-1 font-sans">
+                              <UserCheck className="w-3.5 h-3.5 text-slate-500" />
+                              <span>{log.actor_name || log.actor_id.slice(0, 8)}</span>
+                            </div>
+                          </td>
+                          <td className="py-2.5 px-4 text-slate-400 whitespace-nowrap">
+                            {log.ip_address || '127.0.0.1'}
+                          </td>
+                          <td className="py-2.5 px-4 max-w-xs truncate text-slate-400">
+                            —
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          )}
-        </div>
+          </div>
+        )}
       </main>
     </div>
   );

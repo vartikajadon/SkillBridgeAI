@@ -333,9 +333,15 @@ export const CompetencyGapView: React.FC<Props> = ({ sessionToken, onStartAssess
                         </div>
 
                         <div className="text-right shrink-0">
-                          <span className="px-2 py-0.5 rounded bg-amber-950 text-amber-300 border border-amber-800 font-bold text-[11px]">
-                            Gap: {item.gap_score !== null ? `-${item.gap_score}` : 'Unassessed'}
-                          </span>
+                          {item.last_assessed_at === null || item.current_level === null || item.current_level === 0 ? (
+                            <span className="px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700 font-semibold text-[10px]">
+                              Unassessed
+                            </span>
+                          ) : (
+                            <span className="px-2 py-0.5 rounded bg-rose-950 text-rose-300 border border-rose-800 font-bold text-[11px]">
+                              Deficit: -{item.gap_score}
+                            </span>
+                          )}
                         </div>
                       </div>
 

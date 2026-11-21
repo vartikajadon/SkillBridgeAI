@@ -17,6 +17,7 @@ import {
   Bot,
   CheckCircle,
   Compass,
+  Download,
   FileQuestion,
   History,
   LayoutDashboard,
@@ -49,8 +50,37 @@ export const LearnerPortal: React.FC = () => {
   const [dashboardData, setDashboardData] = useState<LearnerDashboardResponse | null>(null);
   const [dashLoading, setDashLoading] = useState<boolean>(true);
   const [dashError, setDashError] = useState<string | null>(null);
+  const [downloadingTranscript, setDownloadingTranscript] = useState(false);
 
   const token = session?.access_token || '';
+
+  const handleDownloadTranscript = async () => {
+    if (!token) return;
+    try {
+      setDownloadingTranscript(true);
+      const res = await fetch('/api/v1/reports/learner-transcript?format=pdf', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!res.ok) {
+        throw new Error(`Failed to download transcript (${res.status})`);
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `SkillBridge_Official_Transcript_${user?.full_name?.replace(/\s+/g, '_') || 'Learner'}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Failed to download transcript');
+    } finally {
+      setDownloadingTranscript(false);
+    }
+  };
 
   const fetchDashboard = async () => {
     if (!token) return;
@@ -292,6 +322,15 @@ export const LearnerPortal: React.FC = () => {
                   >
                     <FileQuestion className="w-3.5 h-3.5" />
                     <span>Take Assessment</span>
+                  </button>
+                  <button
+                    onClick={handleDownloadTranscript}
+                    disabled={downloadingTranscript}
+                    className="px-4 py-2 bg-emerald-700 hover:bg-emerald-600 text-white rounded-lg text-xs font-semibold shadow transition flex items-center space-x-1.5"
+                    title="Download Official PDF Academic Transcript"
+                  >
+                    <Download className={`w-3.5 h-3.5 ${downloadingTranscript ? 'animate-bounce' : ''}`} />
+                    <span>{downloadingTranscript ? 'Generating PDF...' : 'Official Transcript'}</span>
                   </button>
                 </div>
               </div>

@@ -2,10 +2,10 @@
 Role-Based Dashboard Endpoints (Phase 3)
 Provides dedicated, role-isolated telemetry feeds for Learner, Trainer, and Admin portals.
 """
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
-from fastapi import APIRouter, Depends
-from sqlalchemy import case, func, text
+from fastapi import APIRouter, Depends, Query
+from sqlalchemy import case, distinct, func, text
 from sqlalchemy.orm import Session
 
 from app.api.deps import require_roles
@@ -16,6 +16,11 @@ from app.models.course import Course, Enrollment
 from app.models.document import TrainingDocument
 from app.models.quiz import Quiz, QuizAttempt
 from app.models.user import User
+from app.schemas.analytics import (
+    AdminExecutiveMetricsResponse,
+    DepartmentCompetencyMetric,
+    MonthlyTrendPoint,
+)
 from app.schemas.dashboard import (
     AdminAuditLogItem,
     AdminDashboardResponse,
@@ -403,3 +408,271 @@ def get_admin_dashboard(
         departments=departments,
         recent_audit_logs=recent_audit_logs,
     )
+
+
+# -----------------------------------------------------------------------------
+# 4. Extended Phase 8 Analytics Endpoints
+# -----------------------------------------------------------------------------
+
+@router.get(
+    "/admin/analytics",
+    response_model=AdminExecutiveMetricsResponse,
+    summary="Retrieve verified executive system metrics",
+    description="Calculates verified platform indicators strictly excluding abandoned assessment attempts and unassessed records.",
+)
+def get_admin_analytics_metrics(
+    current_user: User = Depends(require_roles("admin")),
+    db: Session = Depends(get_db),
+) -> AdminExecutiveMetricsResponse:
+    # 1. User Capacity Metrics
+    total_learners = db.query(func.count(User.id)).filter(User.role == "learner").scalar() or 0
+    active_learners = db.query(func.count(User.id)).filter(User.role == "learner", User.is_active.is_(True)).scalar() or 0
+    total_trainers = db.query(func.count(User.id)).filter(User.role == "trainer").scalar() or 0
+    total_admins = db.query(func.count(User.id)).filter(User.role == "admin").scalar() or 0
+
+    # 2. Content & Assessment Capacities
+    total_courses = db.query(func.count(Course.id)).scalar() or 0
+    published_courses = db.query(func.count(Course.id)).filter(Course.status == "published").scalar() or 0
+
+    total_documents = db.query(func.count(TrainingDocument.id)).scalar() or 0
+    published_documents = db.query(func.count(TrainingDocument.id)).filter(TrainingDocument.is_published.is_(True)).scalar() or 0
+    processed_documents = db.query(func.count(TrainingDocument.id)).filter(TrainingDocument.status == "processed").scalar() or 0
+    doc_pub_ratio = round((published_documents / processed_documents) * 100.0, 1) if processed_documents > 0 else 0.0
+
+    total_quizzes = db.query(func.count(Quiz.id)).scalar() or 0
+    published_quizzes = db.query(func.count(Quiz.id)).filter(Quiz.status == "published").scalar() or 0
+
+    # 3. Assessment Performance (Completed Attempts Only)
+    total_attempts = db.query(func.count(QuizAttempt.id)).scalar() or 0
+    completed_attempts = db.query(func.count(QuizAttempt.id)).filter(QuizAttempt.completed_at.isnot(None)).scalar() or 0
+    avg_score = float(db.query(func.avg(QuizAttempt.percentage)).filter(QuizAttempt.completed_at.isnot(None)).scalar() or 0.0)
+    passed_attempts = db.query(func.count(QuizAttempt.id)).filter(
+        QuizAttempt.completed_at.isnot(None),
+        QuizAttempt.passed.is_(True),
+    ).scalar() or 0
+    pass_rate = round((passed_attempts / completed_attempts) * 100.0, 1) if completed_attempts > 0 else 0.0
+
+    # 4. Enrollment & Completion Metrics
+    overall_enrollments = db.query(func.count(Enrollment.id)).scalar() or 0
+    commenced_enrollments = db.query(func.count(Enrollment.id)).filter(
+        Enrollment.status.in_(["completed", "in_progress", "dropped"])
+    ).scalar() or 0
+    completed_enrollments = db.query(func.count(Enrollment.id)).filter(
+        Enrollment.status == "completed"
+    ).scalar() or 0
+    completion_rate = round((completed_enrollments / commenced_enrollments) * 100.0, 1) if commenced_enrollments > 0 else 0.0
+
+    return AdminExecutiveMetricsResponse(
+        total_learners=total_learners,
+        active_learner_accounts=active_learners,
+        total_trainers=total_trainers,
+        total_admins=total_admins,
+        total_courses=total_courses,
+        published_courses=published_courses,
+        total_documents=total_documents,
+        published_documents=published_documents,
+        total_quizzes=total_quizzes,
+        published_quizzes=published_quizzes,
+        total_quiz_attempts=total_attempts,
+        completed_quiz_attempts=completed_attempts,
+        average_assessment_score=round(avg_score, 1),
+        quiz_pass_rate=pass_rate,
+        course_completion_rate=completion_rate,
+        overall_enrollments=overall_enrollments,
+        document_publication_ratio=doc_pub_ratio,
+    )
+
+
+@router.get(
+    "/admin/trends/time-series",
+    response_model=List[MonthlyTrendPoint],
+    summary="Retrieve monthly time-series analytics for Recharts",
+    description="Returns registrations, monthly active learners (MAL), course completions, and assessment submissions by calendar month.",
+)
+def get_admin_monthly_trends(
+    months: int = Query(6, ge=1, le=24, description="Number of historical months to return"),
+    current_user: User = Depends(require_roles("admin")),
+    db: Session = Depends(get_db),
+) -> List[MonthlyTrendPoint]:
+    now = datetime.now(timezone.utc)
+    results: List[MonthlyTrendPoint] = []
+
+    for i in range(months - 1, -1, -1):
+        # Calculate start and end of month i
+        year = now.year
+        month = now.month - i
+        while month <= 0:
+            month += 12
+            year -= 1
+
+        start_dt = datetime(year, month, 1, 0, 0, 0, tzinfo=timezone.utc)
+        if month == 12:
+            end_dt = datetime(year + 1, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
+        else:
+            end_dt = datetime(year, month + 1, 1, 0, 0, 0, tzinfo=timezone.utc)
+
+        month_label = start_dt.strftime("%Y-%m")
+
+        # 1. Registrations in month
+        reg_count = db.query(func.count(User.id)).filter(
+            User.role == "learner",
+            User.created_at >= start_dt,
+            User.created_at < end_dt,
+        ).scalar() or 0
+
+        # 2. Course completions in month
+        comp_count = db.query(func.count(Enrollment.id)).filter(
+            Enrollment.status == "completed",
+            Enrollment.completed_at >= start_dt,
+            Enrollment.completed_at < end_dt,
+        ).scalar() or 0
+
+        # 3. Completed quiz attempts in month
+        attempt_count = db.query(func.count(QuizAttempt.id)).filter(
+            QuizAttempt.completed_at.isnot(None),
+            QuizAttempt.completed_at >= start_dt,
+            QuizAttempt.completed_at < end_dt,
+        ).scalar() or 0
+
+        # 4. Monthly Active Learners (MAL): Distinct active learners with quiz or course completion
+        quiz_users = set(
+            u[0] for u in db.query(QuizAttempt.user_id)
+            .join(User, QuizAttempt.user_id == User.id)
+            .filter(
+                User.role == "learner",
+                User.is_active.is_(True),
+                QuizAttempt.started_at >= start_dt,
+                QuizAttempt.started_at < end_dt,
+            ).all()
+        )
+        comp_users = set(
+            u[0] for u in db.query(Enrollment.user_id)
+            .join(User, Enrollment.user_id == User.id)
+            .filter(
+                User.role == "learner",
+                User.is_active.is_(True),
+                Enrollment.completed_at >= start_dt,
+                Enrollment.completed_at < end_dt,
+            ).all()
+        )
+        mal_count = len(quiz_users.union(comp_users))
+
+        results.append(
+            MonthlyTrendPoint(
+                month=month_label,
+                registrations=reg_count,
+                monthly_active_learners=mal_count,
+                course_completions=comp_count,
+                quiz_attempts=attempt_count,
+            )
+        )
+
+    return results
+
+
+@router.get(
+    "/admin/trends/departments",
+    response_model=List[DepartmentCompetencyMetric],
+    summary="Retrieve departmental competency and gap telemetry",
+    description="Returns headcount, assessment coverage, verified average gap score, and deficit indicators per department.",
+)
+def get_admin_department_trends(
+    current_user: User = Depends(require_roles("admin")),
+    db: Session = Depends(get_db),
+) -> List[DepartmentCompetencyMetric]:
+    # Distinct departments with active learners
+    dept_rows = (
+        db.query(User.department)
+        .filter(
+            User.role == "learner",
+            User.department.isnot(None),
+            User.department != "",
+        )
+        .distinct()
+        .all()
+    )
+
+    results: List[DepartmentCompetencyMetric] = []
+
+    for (dept_name,) in dept_rows:
+        if not dept_name:
+            continue
+
+        # 1. Total and Active Learners
+        total_dept_learners = db.query(func.count(User.id)).filter(
+            User.role == "learner",
+            User.department == dept_name,
+        ).scalar() or 0
+
+        active_dept_learners = db.query(func.count(User.id)).filter(
+            User.role == "learner",
+            User.department == dept_name,
+            User.is_active.is_(True),
+        ).scalar() or 0
+
+        # 2. Assessed Learners: distinct learners who have completed at least one quiz attempt
+        assessed_users_count = db.query(func.count(distinct(QuizAttempt.user_id))).join(
+            User, QuizAttempt.user_id == User.id
+        ).filter(
+            User.department == dept_name,
+            QuizAttempt.completed_at.isnot(None),
+        ).scalar() or 0
+
+        coverage_pct = (
+            round((assessed_users_count / total_dept_learners) * 100.0, 1)
+            if total_dept_learners > 0
+            else 0.0
+        )
+
+        # 3. Average Gap Score (Excluding Unassessed records: last_assessed_at IS NOT NULL)
+        avg_gap = db.query(func.avg(LearnerCompetency.gap_score)).join(
+            User, LearnerCompetency.user_id == User.id
+        ).filter(
+            User.department == dept_name,
+            LearnerCompetency.last_assessed_at.isnot(None),
+        ).scalar()
+
+        avg_gap_score = round(float(avg_gap or 0.0), 2)
+
+        # 4. Average Assessment Score (Completed Attempts Only)
+        avg_score = db.query(func.avg(QuizAttempt.percentage)).join(
+            User, QuizAttempt.user_id == User.id
+        ).filter(
+            User.department == dept_name,
+            QuizAttempt.completed_at.isnot(None),
+        ).scalar()
+
+        avg_assessment_score = round(float(avg_score or 0.0), 1)
+
+        # 5. Top Deficit Competency (Largest aggregate gap among assessed records)
+        top_deficit_row = (
+            db.query(Competency.code, func.sum(LearnerCompetency.gap_score).label("total_gap"))
+            .join(LearnerCompetency, Competency.id == LearnerCompetency.competency_id)
+            .join(User, LearnerCompetency.user_id == User.id)
+            .filter(
+                User.department == dept_name,
+                LearnerCompetency.last_assessed_at.isnot(None),
+                LearnerCompetency.gap_score > 0,
+            )
+            .group_by(Competency.code)
+            .order_by(func.sum(LearnerCompetency.gap_score).desc())
+            .first()
+        )
+        top_deficit = top_deficit_row[0] if top_deficit_row else None
+
+        results.append(
+            DepartmentCompetencyMetric(
+                department=dept_name,
+                total_learners=total_dept_learners,
+                active_learners=active_dept_learners,
+                assessed_learners=assessed_users_count,
+                assessment_coverage_pct=coverage_pct,
+                average_gap_score=avg_gap_score,
+                average_assessment_score=avg_assessment_score,
+                top_deficit_competency=top_deficit,
+            )
+        )
+
+    # Sort departments by total learners descending
+    results.sort(key=lambda x: x.total_learners, reverse=True)
+    return results

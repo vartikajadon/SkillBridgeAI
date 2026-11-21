@@ -11,6 +11,7 @@ import { QuizEditor } from '../../components/trainer/QuizEditor';
 import { TrainerQuizList } from '../../components/trainer/TrainerQuizList';
 import {
   CheckCircle,
+  Download,
   FileQuestion,
   GraduationCap,
   LayoutDashboard,
@@ -39,8 +40,37 @@ export const TrainerPortal: React.FC = () => {
   const [dashboardData, setDashboardData] = useState<TrainerDashboardResponse | null>(null);
   const [dashLoading, setDashLoading] = useState<boolean>(true);
   const [dashError, setDashError] = useState<string | null>(null);
+  const [downloadingReport, setDownloadingReport] = useState<boolean>(false);
 
   const token = session?.access_token || '';
+
+  const handleDownloadQuizAudit = async (format: 'pdf' | 'csv' = 'pdf') => {
+    if (!token) return;
+    try {
+      setDownloadingReport(true);
+      const res = await fetch(`/api/v1/reports/assessment-performance?format=${format}`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!res.ok) {
+        throw new Error(`Failed to download report (${res.status})`);
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Faculty_Quiz_Assessment_Audit_${new Date().toISOString().slice(0, 10)}.${format}`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err: unknown) {
+      alert(err instanceof Error ? err.message : 'Failed to download assessment report');
+    } finally {
+      setDownloadingReport(false);
+    }
+  };
 
   const fetchDashboard = async () => {
     if (!token) return;
@@ -247,6 +277,15 @@ export const TrainerPortal: React.FC = () => {
                   >
                     <FileQuestion className="w-3.5 h-3.5" />
                     <span>Manage Quizzes</span>
+                  </button>
+                  <button
+                    onClick={() => handleDownloadQuizAudit('pdf')}
+                    disabled={downloadingReport}
+                    className="px-4 py-2 bg-cyan-700 hover:bg-cyan-600 text-white rounded-lg text-xs font-semibold shadow transition flex items-center space-x-1.5"
+                    title="Download Faculty Quiz Assessment Audit PDF"
+                  >
+                    <Download className={`w-3.5 h-3.5 ${downloadingReport ? 'animate-bounce' : ''}`} />
+                    <span>{downloadingReport ? 'Generating Audit...' : 'Download Quiz Audit'}</span>
                   </button>
                 </div>
               </div>

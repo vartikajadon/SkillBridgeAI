@@ -47,14 +47,39 @@ async def mock_login(
     db: Session = Depends(get_db),
 ):
     target_email = payload.email.strip().lower()
+
+    # Helpful shorthand aliases for testing
+    aliases = {
+        "learner": "learner.patel@skillbridge.gov.in",
+        "learner@skillbridge.gov.in": "learner.patel@skillbridge.gov.in",
+        "amit": "learner.patel@skillbridge.gov.in",
+        "trainer": "trainer.sharma@skillbridge.gov.in",
+        "trainer@skillbridge.gov.in": "trainer.sharma@skillbridge.gov.in",
+        "sunita": "trainer.sharma@skillbridge.gov.in",
+        "admin": "admin@skillbridge.gov.in",
+        "admin@skillbridge.gov.in": "admin@skillbridge.gov.in",
+        "rajesh": "admin@skillbridge.gov.in",
+    }
+    if target_email in aliases:
+        target_email = aliases[target_email]
+
     user = db.query(User).filter(User.email == target_email).first()
+    if not user:
+        # If database was unseeded, auto-seed to guarantee test accounts exist
+        try:
+            from app.db.seed import seed_database
+            seed_database(db)
+            user = db.query(User).filter(User.email == target_email).first()
+        except Exception:
+            pass
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail=(
-                f"User with email '{payload.email}' not found in local database. "
+                f"User with email '{payload.email}' not found. "
                 "Available mock accounts: learner.patel@skillbridge.gov.in, "
-                "trainer.sharma@skillbridge.gov.in, admin@skillbridge.gov.in"
+                "trainer.sharma@skillbridge.gov.in, admin@skillbridge.gov.in (or simply 'learner', 'trainer', 'admin')"
             ),
         )
     if not user.is_active:

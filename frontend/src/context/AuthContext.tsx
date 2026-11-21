@@ -166,7 +166,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (!res.ok) {
         const errJson = await res.json().catch(() => null);
-        return { error: new Error(errJson?.detail || 'Invalid email or password.') };
+        if (res.status === 502 || res.status === 504 || res.status === 500) {
+          return {
+            error: new Error(
+              errJson?.detail ||
+                `Backend server unreachable (HTTP ${res.status}). Please make sure FastAPI backend is running on http://127.0.0.1:8000.`
+            ),
+          };
+        }
+        return {
+          error: new Error(
+            errJson?.detail ||
+              'Invalid credentials. Please use one of the quick mock logins (e.g. learner.patel@skillbridge.gov.in / password123).'
+          ),
+        };
       }
 
       const data = await res.json();
@@ -192,7 +205,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { error: null };
     } catch (err: unknown) {
       return {
-        error: err instanceof Error ? err : new Error('Unable to connect to authentication service'),
+        error: new Error(
+          'Cannot connect to backend server at http://127.0.0.1:8000. Please start the backend in a terminal with: python -m uvicorn app.main:app --port 8000'
+        ),
       };
     }
   };

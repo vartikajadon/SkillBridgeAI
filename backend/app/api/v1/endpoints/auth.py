@@ -167,6 +167,26 @@ async def admin_update_user(
             detail=f"User with ID '{user_id}' not found",
         )
 
+    # Protect against deactivating or demoting the last active administrator (Requirement C.4)
+    if target_user.role == "admin":
+        will_deactivate = admin_update.is_active is False
+        will_demote = admin_update.role is not None and admin_update.role != "admin"
+        if will_deactivate or will_demote:
+            other_active_admins = (
+                db.query(User)
+                .filter(
+                    User.role == "admin",
+                    User.is_active == True,
+                    User.id != target_user.id,
+                )
+                .count()
+            )
+            if other_active_admins == 0:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Operation rejected: cannot deactivate or demote the last remaining active administrator.",
+                )
+
     # Apply admin updates
     if admin_update.role is not None:
         target_user.role = admin_update.role

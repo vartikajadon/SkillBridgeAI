@@ -255,3 +255,62 @@ def test_rbac_admin_can_access_and_elevate_user():
     )
     assert promote_res.status_code == 200
     assert promote_res.json()["role"] == "trainer"
+
+
+def test_cannot_deactivate_or_demote_last_active_admin():
+    sole_admin_id = uuid.uuid4()
+    sole_admin_token = create_token(sub=str(sole_admin_id), email="sole.admin@gov.in")
+
+    with TestingSessionLocal() as db:
+        # Clear any previously created test admins to ensure sole_admin is genuinely the last active admin
+        db.query(User).filter(User.role == "admin").delete()
+        sole_admin = User(
+            id=sole_admin_id,
+            email="sole.admin@gov.in",
+            full_name="Sole Active Admin",
+            role="admin",
+            is_active=True,
+        )
+        db.add(sole_admin)
+        db.commit()
+
+    # Attempt to deactivate the only active admin -> 400 Bad Request
+    deact_res = client.patch(
+        f"/api/v1/auth/admin/users/{sole_admin_id}",
+        json={"is_active": False},
+        headers={"Authorization": f"Bearer {sole_admin_token}"},
+    )
+    assert deact_res.status_code == 400
+    assert "last remaining active administrator" in deact_res.json()["detail"].lower()
+
+    # Attempt to demote the only active admin -> 400 Bad Request
+    demote_res = client.patch(
+        f"/api/v1/auth/admin/users/{sole_admin_id}",
+        json={"role": "learner"},
+        headers={"Authorization": f"Bearer {sole_admin_token}"},
+    )
+    assert demote_res.status_code == 400
+    assert "last remaining active administrator" in demote_res.json()["detail"].lower()
+
+    # Create a second active admin -> now updating one admin succeeds
+    second_admin_id = uuid.uuid4()
+    with TestingSessionLocal() as db:
+        second_admin = User(
+            id=second_admin_id,
+            email="second.admin@gov.in",
+            full_name="Second Active Admin",
+            role="admin",
+            is_active=True,
+        )
+        db.add(second_admin)
+        db.commit()
+
+    # Now deactivating sole_admin succeeds because second_admin remains active
+    allowed_res = client.patch(
+        f"/api/v1/auth/admin/users/{sole_admin_id}",
+        json={"is_active": False},
+        headers={"Authorization": f"Bearer {sole_admin_token}"},
+    )
+    assert allowed_res.status_code == 200
+    assert allowed_res.json()["is_active"] is False
+

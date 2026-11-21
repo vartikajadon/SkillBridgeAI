@@ -41,7 +41,7 @@ class Settings(BaseSettings):
         description="Supabase Anon/Service Key placeholder",
     )
     DATABASE_URL: str = Field(
-        default="postgresql://postgres:placeholder_password@db.placeholder-project.supabase.co:5432/postgres",
+        default="postgresql+psycopg://postgres:placeholder_password@db.placeholder-project.supabase.co:5432/postgres",
         description="PostgreSQL / pgvector connection URL placeholder",
     )
 

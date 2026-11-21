@@ -1,12 +1,16 @@
 """
 Authentication and User Profile Endpoints (Phase 2)
 """
+import time
 import uuid
-from typing import List
+from typing import List, Optional
+import jwt
 from fastapi import APIRouter, Depends, HTTPException, Query, status
+from pydantic import BaseModel
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 from app.api.deps import get_authenticated_identity, get_current_user, require_roles
+from app.core.config import settings
 from app.core.security import AuthenticatedIdentity
 from app.db.session import get_db
 from app.models.audit import AuditLog
@@ -19,6 +23,60 @@ from app.schemas.auth import (
 )
 
 router = APIRouter()
+
+
+class MockLoginRequest(BaseModel):
+    email: str
+    password: Optional[str] = "password123"
+
+
+class MockLoginResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserProfileResponse
+
+
+@router.post(
+    "/mock-login",
+    response_model=MockLoginResponse,
+    summary="Mock authentication login for local testing without live Supabase",
+    description="Returns valid JWT token and profile for seeded accounts (Learner, Trainer, Admin).",
+)
+async def mock_login(
+    payload: MockLoginRequest,
+    db: Session = Depends(get_db),
+):
+    target_email = payload.email.strip().lower()
+    user = db.query(User).filter(User.email == target_email).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=(
+                f"User with email '{payload.email}' not found in local database. "
+                "Available mock accounts: learner.patel@skillbridge.gov.in, "
+                "trainer.sharma@skillbridge.gov.in, admin@skillbridge.gov.in"
+            ),
+        )
+    if not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="User account has been deactivated.",
+        )
+
+    jwt_payload = {
+        "sub": str(user.id),
+        "email": user.email,
+        "aud": settings.SUPABASE_JWT_AUDIENCE,
+        "exp": int(time.time()) + 86400 * 30,  # 30-day testing session
+        "iat": int(time.time()),
+    }
+    token = jwt.encode(jwt_payload, settings.SUPABASE_JWT_SECRET, algorithm="HS256")
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user": user,
+    }
+
 
 
 @router.post(

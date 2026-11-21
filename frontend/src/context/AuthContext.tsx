@@ -85,21 +85,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // 1. Initial session check
     supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
-      setSession(initialSession);
-      setSupabaseUser(initialSession?.user ?? null);
-      fetchProfile(initialSession).finally(() => {
+      if (initialSession) {
+        setSession(initialSession);
+        setSupabaseUser(initialSession?.user ?? null);
+        fetchProfile(initialSession).finally(() => {
+          setLoading(false);
+        });
+      } else {
+        // Fallback: check for locally persisted mock session
+        const stored = localStorage.getItem('skillbridge_mock_session');
+        if (stored) {
+          try {
+            const parsedSession = JSON.parse(stored);
+            setSession(parsedSession);
+            fetchProfile(parsedSession).finally(() => {
+              setLoading(false);
+            });
+            return;
+          } catch {
+            localStorage.removeItem('skillbridge_mock_session');
+          }
+        }
+        setSession(null);
+        setSupabaseUser(null);
+        setUser(null);
         setLoading(false);
-      });
+      }
     });
 
     // 2. Non-blocking auth state listener
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, newSession) => {
-      setSession(newSession);
-      setSupabaseUser(newSession?.user ?? null);
-      // Fetch profile asynchronously without deadlocking the callback
-      fetchProfile(newSession);
+      if (newSession) {
+        setSession(newSession);
+        setSupabaseUser(newSession?.user ?? null);
+        fetchProfile(newSession);
+      }
     });
 
     return () => {
@@ -108,19 +130,71 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [fetchProfile]);
 
   const login = async (email: string, password: string) => {
-    const { data, error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
-    if (error) {
-      return { error: new Error(error.message) };
+    // 1. If live Supabase URL is provided, attempt official sign-in
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+    const isLiveSupabase = supabaseUrl && !supabaseUrl.includes('placeholder');
+
+    if (isLiveSupabase) {
+      try {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (!error && data.session) {
+          setSession(data.session);
+          setSupabaseUser(data.session.user);
+          await fetchProfile(data.session);
+          return { error: null };
+        }
+        if (error) {
+          return { error: new Error(error.message) };
+        }
+      } catch {
+        // Fall through to mock-login endpoint
+      }
     }
-    if (data.session) {
-      setSession(data.session);
-      setSupabaseUser(data.session.user);
-      await fetchProfile(data.session);
+
+    // 2. Local mock login fallback (for offline/local development without Supabase)
+    try {
+      const res = await fetch('/api/v1/auth/mock-login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => null);
+        return { error: new Error(errJson?.detail || 'Invalid email or password.') };
+      }
+
+      const data = await res.json();
+      const mockSession: any = {
+        access_token: data.access_token,
+        token_type: 'bearer',
+        expires_in: 86400 * 30,
+        refresh_token: data.access_token,
+        user: {
+          id: data.user.id,
+          email: data.user.email,
+          aud: 'authenticated',
+          app_metadata: {},
+          user_metadata: {},
+          created_at: new Date().toISOString(),
+        },
+      };
+
+      setSession(mockSession);
+      setUser(data.user);
+      localStorage.setItem('skillbridge_mock_session', JSON.stringify(mockSession));
+      setProfileIncomplete(false);
+      return { error: null };
+    } catch (err: unknown) {
+      return {
+        error: err instanceof Error ? err : new Error('Unable to connect to authentication service'),
+      };
     }
-    return { error: null };
   };
 
   const completeProfile = async (profileData: ProfileCreateData) => {
@@ -202,7 +276,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const logout = async () => {
-    await supabase.auth.signOut();
+    localStorage.removeItem('skillbridge_mock_session');
+    try {
+      await supabase.auth.signOut();
+    } catch {}
     setSession(null);
     setSupabaseUser(null);
     setUser(null);

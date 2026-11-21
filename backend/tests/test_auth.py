@@ -34,15 +34,14 @@ def override_get_db():
         db.close()
 
 
-app.dependency_overrides[get_db] = override_get_db
-
-
-@pytest.fixture(scope="session", autouse=True)
+@pytest.fixture(scope="module", autouse=True)
 def setup_test_db():
+    app.dependency_overrides[get_db] = override_get_db
     Base.metadata.create_all(bind=test_engine)
     yield
     Base.metadata.drop_all(bind=test_engine)
     test_engine.dispose()
+    app.dependency_overrides.pop(get_db, None)
     if os.path.exists(TEST_DB_FILE):
         try:
             os.remove(TEST_DB_FILE)

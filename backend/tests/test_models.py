@@ -140,11 +140,13 @@ def test_deterministic_seed_is_idempotent(db_session):
     role_count_1 = db_session.query(JobRole).count()
     comp_count_1 = db_session.query(Competency).count()
     course_count_1 = db_session.query(Course).count()
+    quiz_count_1 = db_session.query(Quiz).count()
     user_count_1 = db_session.query(User).count()
 
     assert role_count_1 == 2
-    assert comp_count_1 == 8
-    assert course_count_1 == 16
+    assert comp_count_1 == 12
+    assert course_count_1 == 20
+    assert quiz_count_1 == 2
     assert user_count_1 == 3
 
     # Second execution (Idempotency test)
@@ -152,9 +154,11 @@ def test_deterministic_seed_is_idempotent(db_session):
     role_count_2 = db_session.query(JobRole).count()
     comp_count_2 = db_session.query(Competency).count()
     course_count_2 = db_session.query(Course).count()
+    quiz_count_2 = db_session.query(Quiz).count()
     user_count_2 = db_session.query(User).count()
 
     assert role_count_2 == role_count_1, "Duplicate JobRoles were created!"
     assert comp_count_2 == comp_count_1, "Duplicate Competencies were created!"
     assert course_count_2 == course_count_1, "Duplicate Courses were created!"
+    assert quiz_count_2 == quiz_count_1, "Duplicate Quizzes were created!"
     assert user_count_2 == user_count_1, "Duplicate Users were created!"

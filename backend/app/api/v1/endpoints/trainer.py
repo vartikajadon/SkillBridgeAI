@@ -16,6 +16,7 @@ from app.models.document import DocumentChunk, TrainingDocument
 from app.models.quiz import Quiz, QuizAttempt
 from app.models.user import User
 from app.schemas.trainer import (
+    DocumentPublishResponse,
     DocumentUploadResponse,
     QuizDeleteResponse,
     QuizGenerateRequest,
@@ -26,6 +27,7 @@ from app.schemas.trainer import (
     TrainerQuizListItem,
 )
 from app.services.assessment_engine import validate_quiz_definition
+from app.services.document_embedding import embed_document_chunks
 from app.services.document_processor import process_and_store_document
 from app.services.quiz_generator import generate_quiz_from_document
 
@@ -60,6 +62,12 @@ async def upload_training_document(
             title=title or file.filename or "Untitled Document",
             uploader_id=current_user.id,
         )
+        # Generate initial chunk embeddings
+        try:
+            embed_document_chunks(db, doc.id)
+            db.refresh(doc)
+        except Exception:
+            pass
     except ValueError as e:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -74,6 +82,9 @@ async def upload_training_document(
         mime_type=doc.mime_type,
         status=doc.status,
         chunk_count=len(chunks),
+        is_published=doc.is_published,
+        embedding_model=doc.embedding_model,
+        embedding_dim=doc.embedding_dim,
         created_at=doc.created_at,
     )
 
@@ -105,10 +116,62 @@ def list_trainer_documents(
                 mime_type=doc.mime_type,
                 status=doc.status,
                 chunk_count=chunk_count,
+                is_published=doc.is_published,
+                embedding_model=doc.embedding_model,
+                embedding_dim=doc.embedding_dim,
                 created_at=doc.created_at,
             )
         )
     return results
+
+
+@router.post(
+    "/documents/{document_id}/publish",
+    response_model=DocumentPublishResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Publish training document for learner RAG access",
+    description="Transitions document to published status, generates chunk embeddings, and exposes it to civil service learners.",
+)
+def publish_trainer_document(
+    document_id: uuid.UUID,
+    current_user: User = Depends(require_roles("trainer", "admin")),
+    db: Session = Depends(get_db),
+) -> DocumentPublishResponse:
+    doc = db.query(TrainingDocument).filter(TrainingDocument.id == document_id).first()
+    if not doc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Document with ID '{document_id}' not found.",
+        )
+
+    # Ownership check
+    if current_user.role != "admin" and doc.uploaded_by != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You do not have permission to publish this document.",
+        )
+
+    if doc.status != "processed":
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"Cannot publish document with status '{doc.status}'. Document must be processed first.",
+        )
+
+    # Ensure chunk embeddings exist
+    _, total = embed_document_chunks(db, doc.id)
+
+    doc.is_published = True
+    db.commit()
+    db.refresh(doc)
+
+    return DocumentPublishResponse(
+        id=doc.id,
+        title=doc.title,
+        is_published=True,
+        status=doc.status,
+        chunks_embedded=total,
+        message="Document published successfully. It is now accessible to learners via AI Learning Assistant.",
+    )
 
 
 @router.delete(

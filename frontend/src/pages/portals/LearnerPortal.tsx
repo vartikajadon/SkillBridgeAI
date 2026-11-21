@@ -10,9 +10,11 @@ import { AssessmentHistoryTable } from '../../components/assessment/AssessmentHi
 import { CompetencyGapView } from '../../components/assessment/CompetencyGapView';
 import { RecommendationList } from '../../components/recommendations/RecommendationList';
 import { LearningPathView } from '../../components/recommendations/LearningPathView';
+import { LearningAssistant } from '../../components/chat/LearningAssistant';
 import {
   Award,
   BookOpen,
+  Bot,
   CheckCircle,
   Compass,
   FileQuestion,
@@ -28,6 +30,7 @@ import {
 
 type TabType =
   | 'dashboard'
+  | 'learning-assistant'
   | 'recommendations'
   | 'learning-path'
   | 'assessments'
@@ -147,6 +150,22 @@ export const LearnerPortal: React.FC = () => {
           >
             <LayoutDashboard className="w-4 h-4" />
             <span>Dashboard</span>
+          </button>
+
+          <button
+            onClick={() => {
+              setActiveTab('learning-assistant');
+              setActiveQuizId(null);
+              setCurrentResult(null);
+            }}
+            className={`flex items-center space-x-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition shrink-0 ${
+              activeTab === 'learning-assistant'
+                ? 'bg-indigo-600 text-white shadow'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+            }`}
+          >
+            <Bot className="w-4 h-4 text-emerald-400" />
+            <span>AI Assistant (RAG)</span>
           </button>
 
           <button
@@ -534,6 +553,13 @@ export const LearnerPortal: React.FC = () => {
         {/* TAB 6: ATTEMPT HISTORY */}
         {activeTab === 'history' && (
           <AssessmentHistoryTable sessionToken={token} />
+        )}
+
+        {/* TAB 7: AI LEARNING ASSISTANT (RAG) */}
+        {activeTab === 'learning-assistant' && (
+          <div className="space-y-6">
+            <LearningAssistant sessionToken={token} />
+          </div>
         )}
       </main>
     </div>

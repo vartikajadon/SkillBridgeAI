@@ -71,6 +71,36 @@ class Settings(BaseSettings):
         description="Anthropic API Key placeholder",
     )
 
+    # Phase 7: RAG & Embedding Service Configuration
+    EMBEDDING_PROVIDER: str = Field(
+        default="mock",
+        description="Embedding provider: mock, openai, gemini, ollama",
+    )
+    EMBEDDING_MODEL: str = Field(
+        default="mock-embedding-v1",
+        description="Embedding model identifier",
+    )
+    EMBEDDING_DIMENSIONS: int = Field(
+        default=1536,
+        description="Vector dimension for embeddings (default 1536)",
+    )
+    RAG_TOP_K: int = Field(
+        default=4,
+        description="Default number of top relevant chunks to retrieve",
+    )
+    RAG_SIMILARITY_THRESHOLD: float = Field(
+        default=0.20,
+        description="Minimum cosine similarity required for chunk relevance",
+    )
+    RAG_LLM_PROVIDER: str = Field(
+        default="mock",
+        description="RAG response synthesis LLM provider: mock, gemini, openai, anthropic",
+    )
+    RAG_LLM_MODEL: str = Field(
+        default="mock-rag-v1",
+        description="LLM model identifier for grounded generation",
+    )
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",

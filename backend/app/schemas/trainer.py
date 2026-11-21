@@ -20,6 +20,9 @@ class DocumentUploadResponse(BaseModel):
     mime_type: str
     status: str
     chunk_count: int
+    is_published: bool = False
+    embedding_model: Optional[str] = None
+    embedding_dim: Optional[int] = None
     created_at: datetime
 
     model_config = ConfigDict(extra="forbid", from_attributes=True)
@@ -33,9 +36,23 @@ class TrainerDocumentItem(BaseModel):
     mime_type: str
     status: str
     chunk_count: int
+    is_published: bool = False
+    embedding_model: Optional[str] = None
+    embedding_dim: Optional[int] = None
     created_at: datetime
 
     model_config = ConfigDict(extra="forbid", from_attributes=True)
+
+
+class DocumentPublishResponse(BaseModel):
+    id: uuid.UUID
+    title: str
+    is_published: bool
+    status: str
+    chunks_embedded: int
+    message: str
+
+    model_config = ConfigDict(extra="forbid")
 
 
 # -----------------------------------------------------------------------------

@@ -47,6 +47,8 @@ class VectorType(UserDefinedType):
     """Custom pgvector compatible vector type.
     Emits vector(dim) on PostgreSQL, and TEXT on SQLite/offline.
     """
+    cache_ok = True
+
     def __init__(self, dim: int = 1536):
         self.dim = dim
 

@@ -6,6 +6,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from sqlalchemy import (
+    Boolean,
     CheckConstraint,
     DateTime,
     ForeignKey,
@@ -20,6 +21,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.models.base import Base, SQLiteUUID, TimestampMixin, UUIDPrimaryKeyMixin, VectorType
 
 if TYPE_CHECKING:
+    from app.models.competency import Competency
     from app.models.user import User
 
 
@@ -76,11 +78,43 @@ class TrainingDocument(Base, UUIDPrimaryKeyMixin, TimestampMixin):
         index=True,
         doc="Trainer or admin who uploaded the document",
     )
+    is_published: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        index=True,
+        doc="Whether document is published and accessible to civil service learners for RAG",
+    )
+    competency_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        SQLiteUUID(),
+        ForeignKey("competencies.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+        doc="Target competency covered by this document",
+    )
+    embedding_model: Mapped[Optional[str]] = mapped_column(
+        String(100),
+        nullable=True,
+        doc="Model used for chunk embeddings e.g. text-embedding-3-small",
+    )
+    embedding_dim: Mapped[Optional[int]] = mapped_column(
+        Integer,
+        nullable=True,
+        doc="Vector dimension used for embeddings",
+    )
+    published_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+        doc="Timestamp when document was published",
+    )
 
     # Relationships
     uploader: Mapped[Optional["User"]] = relationship(
         "User",
         back_populates="uploaded_documents",
+    )
+    competency: Mapped[Optional["Competency"]] = relationship(
+        "Competency",
     )
     chunks: Mapped[List["DocumentChunk"]] = relationship(
         "DocumentChunk",

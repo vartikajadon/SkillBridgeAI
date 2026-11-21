@@ -11,6 +11,10 @@ class Settings(BaseSettings):
     PROJECT_NAME: str = "SkillBridge AI API"
     VERSION: str = "0.2.0"
     API_V1_STR: str = "/api/v1"
+    ENVIRONMENT: str = Field(
+        default="development",
+        description="Runtime environment: development, testing, staging, production",
+    )
 
     # CORS settings
     BACKEND_CORS_ORIGINS: Union[List[str], str] = [
@@ -110,3 +114,39 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+
+def validate_rag_providers_for_environment(s: Settings) -> None:
+    """Validates that mock RAG and embedding providers are not silently selected in production.
+    Ensures clear configuration errors at startup rather than serving synthetic answers.
+    """
+    env = (s.ENVIRONMENT or "development").strip().lower()
+    if env != "production":
+        return
+
+    emb_provider = (s.EMBEDDING_PROVIDER or "").strip().lower()
+    if emb_provider == "mock" or not emb_provider:
+        raise RuntimeError(
+            "Production configuration error: EMBEDDING_PROVIDER cannot be 'mock' in production environment. "
+            "Please configure a production provider (e.g. 'openai')."
+        )
+
+    llm_provider = (s.RAG_LLM_PROVIDER or "").strip().lower()
+    if llm_provider == "mock" or not llm_provider:
+        raise RuntimeError(
+            "Production configuration error: RAG_LLM_PROVIDER cannot be 'mock' in production environment. "
+            "Please configure a production provider (e.g. 'openai')."
+        )
+
+    if emb_provider == "openai":
+        if not s.OPENAI_API_KEY or s.OPENAI_API_KEY.startswith("sk-placeholder") or len(s.OPENAI_API_KEY.strip()) < 10:
+            raise RuntimeError(
+                "Production configuration error: Valid OPENAI_API_KEY is required in production when EMBEDDING_PROVIDER='openai'."
+            )
+
+    if llm_provider == "openai":
+        if not s.OPENAI_API_KEY or s.OPENAI_API_KEY.startswith("sk-placeholder") or len(s.OPENAI_API_KEY.strip()) < 10:
+            raise RuntimeError(
+                "Production configuration error: Valid OPENAI_API_KEY is required in production when RAG_LLM_PROVIDER='openai'."
+            )
+

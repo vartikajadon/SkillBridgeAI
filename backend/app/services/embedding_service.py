@@ -188,14 +188,28 @@ class EmbeddingService:
         prov_type = (settings.EMBEDDING_PROVIDER or "mock").strip().lower()
         dims = int(settings.EMBEDDING_DIMENSIONS or 1536)
         model = settings.EMBEDDING_MODEL or "mock-embedding-v1"
+        is_production = (settings.ENVIRONMENT or "development").strip().lower() == "production"
 
-        if prov_type == "openai" and settings.OPENAI_API_KEY and not settings.OPENAI_API_KEY.startswith("sk-placeholder"):
-            return OpenAIEmbeddingProvider(
-                api_key=settings.OPENAI_API_KEY,
-                model_name=model,
-                dimensions=dims,
+        if is_production and (prov_type == "mock" or not prov_type):
+            raise RuntimeError(
+                "Production configuration error: Mock embedding provider is strictly forbidden in production."
             )
-        # Default / Mock / Offline provider
+
+        if prov_type == "openai":
+            if not settings.OPENAI_API_KEY or settings.OPENAI_API_KEY.startswith("sk-placeholder"):
+                if is_production:
+                    raise RuntimeError("Production configuration error: Valid OPENAI_API_KEY is required in production.")
+            else:
+                return OpenAIEmbeddingProvider(
+                    api_key=settings.OPENAI_API_KEY,
+                    model_name=model,
+                    dimensions=dims,
+                )
+
+        if is_production:
+            raise RuntimeError(f"Production configuration error: Unsupported or unconfigured embedding provider '{prov_type}'.")
+
+        # Default / Mock / Offline provider for development and testing
         return DeterministicMockEmbeddingProvider(model_name=model, dimensions=dims)
 
     @property

@@ -302,15 +302,26 @@ class RAGService:
 
     def _create_configured_generator(self) -> BaseRAGGenerator:
         prov = (settings.RAG_LLM_PROVIDER or "mock").strip().lower()
-        if (
-            prov == "openai"
-            and settings.OPENAI_API_KEY
-            and not settings.OPENAI_API_KEY.startswith("sk-placeholder")
-        ):
-            return OpenAIRAGGenerator(
-                api_key=settings.OPENAI_API_KEY,
-                model_name=settings.RAG_LLM_MODEL or "gpt-4o-mini",
+        is_production = (settings.ENVIRONMENT or "development").strip().lower() == "production"
+
+        if is_production and (prov == "mock" or not prov):
+            raise RuntimeError(
+                "Production configuration error: Mock RAG LLM provider is strictly forbidden in production."
             )
+
+        if prov == "openai":
+            if not settings.OPENAI_API_KEY or settings.OPENAI_API_KEY.startswith("sk-placeholder"):
+                if is_production:
+                    raise RuntimeError("Production configuration error: Valid OPENAI_API_KEY is required in production.")
+            else:
+                return OpenAIRAGGenerator(
+                    api_key=settings.OPENAI_API_KEY,
+                    model_name=settings.RAG_LLM_MODEL or "gpt-4o-mini",
+                )
+
+        if is_production:
+            raise RuntimeError(f"Production configuration error: Unsupported or unconfigured RAG provider '{prov}'.")
+
         return DeterministicGroundedGenerator()
 
     def generate(

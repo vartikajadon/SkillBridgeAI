@@ -31,9 +31,29 @@ import { Register } from './pages/Register';
 import { CompleteProfile } from './pages/CompleteProfile';
 import { Profile } from './pages/Profile';
 import { Unauthorized } from './pages/Unauthorized';
-import { LearnerPortal } from './pages/portals/LearnerPortal';
-import { TrainerPortal } from './pages/portals/TrainerPortal';
-import { AdminPortal } from './pages/portals/AdminPortal';
+
+// Route-level code splitting for heavy portal views
+const LearnerPortal = React.lazy(() =>
+  import('./pages/portals/LearnerPortal').then((m) => ({ default: m.LearnerPortal }))
+);
+const TrainerPortal = React.lazy(() =>
+  import('./pages/portals/TrainerPortal').then((m) => ({ default: m.TrainerPortal }))
+);
+const AdminPortal = React.lazy(() =>
+  import('./pages/portals/AdminPortal').then((m) => ({ default: m.AdminPortal }))
+);
+
+const PortalLoadingFallback: React.FC<{ portalName: string }> = ({ portalName }) => (
+  <div className="min-h-screen bg-slate-950 flex flex-col items-center justify-center text-white space-y-4">
+    <div className="w-12 h-12 rounded-xl bg-indigo-600/20 border border-indigo-500/30 flex items-center justify-center">
+      <Sparkles className="w-6 h-6 text-indigo-400 animate-spin" />
+    </div>
+    <div className="text-center space-y-1">
+      <p className="text-sm font-semibold text-slate-200">Loading {portalName}...</p>
+      <p className="text-xs text-slate-400">Preparing official public sector workspace</p>
+    </div>
+  </div>
+);
 
 interface HealthData {
   status: string;
@@ -342,7 +362,9 @@ export default function App(): React.JSX.Element {
             element={
               <ProtectedRoute>
                 <RoleRouteGuard allowedRoles={['learner', 'trainer', 'admin']}>
-                  <LearnerPortal />
+                  <React.Suspense fallback={<PortalLoadingFallback portalName="Learner Portal" />}>
+                    <LearnerPortal />
+                  </React.Suspense>
                 </RoleRouteGuard>
               </ProtectedRoute>
             }
@@ -353,7 +375,9 @@ export default function App(): React.JSX.Element {
             element={
               <ProtectedRoute>
                 <RoleRouteGuard allowedRoles={['trainer', 'admin']}>
-                  <TrainerPortal />
+                  <React.Suspense fallback={<PortalLoadingFallback portalName="Trainer Portal" />}>
+                    <TrainerPortal />
+                  </React.Suspense>
                 </RoleRouteGuard>
               </ProtectedRoute>
             }
@@ -364,7 +388,9 @@ export default function App(): React.JSX.Element {
             element={
               <ProtectedRoute>
                 <RoleRouteGuard allowedRoles={['admin']}>
-                  <AdminPortal />
+                  <React.Suspense fallback={<PortalLoadingFallback portalName="Admin Portal" />}>
+                    <AdminPortal />
+                  </React.Suspense>
                 </RoleRouteGuard>
               </ProtectedRoute>
             }

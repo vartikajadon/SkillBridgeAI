@@ -1,4 +1,4 @@
-# Dependencies for SkillBridge AI Backend (Phase 2)
+# Dependencies for SkillBridge AI Backend (Phase 2 & Phase 6)
 fastapi>=0.115.0
 uvicorn[standard]>=0.30.0
 pydantic>=2.9.0
@@ -11,3 +11,5 @@ alembic>=1.13.3
 psycopg[binary]>=3.2.0
 pyjwt>=2.9.0
 cryptography>=43.0.0
+python-multipart>=0.0.9
+pypdf>=5.0.0

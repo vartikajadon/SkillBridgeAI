@@ -803,7 +803,7 @@ def seed_database(db: Optional[Session] = None) -> None:
         for q_data in diagnostic_quizzes_data:
             quiz = db.query(Quiz).filter(Quiz.id == q_data["id"]).first()
             if not quiz:
-                quiz = Quiz(**q_data)
+                quiz = Quiz(status="published", **q_data)
                 db.add(quiz)
                 db.flush()
                 print(f"  [+] Created Baseline Diagnostic Quiz: {quiz.title} (10 MCQs, {quiz.total_marks} Marks)")
@@ -813,6 +813,7 @@ def seed_database(db: Optional[Session] = None) -> None:
                 quiz.passing_marks = q_data["passing_marks"]
                 quiz.questions = q_data["questions"]
                 quiz.created_by = q_data["created_by"]
+                quiz.status = "published"
 
         # ----------------------------------------------------------------------
         # 6. Seed Users (Admin, Trainer, Learner)

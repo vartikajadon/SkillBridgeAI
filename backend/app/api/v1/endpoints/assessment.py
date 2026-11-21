@@ -51,7 +51,12 @@ def get_assessment_catalogue(
     current_user: User = Depends(require_roles("learner")),
     db: Session = Depends(get_db),
 ) -> List[AssessmentCatalogueItem]:
-    quizzes = db.query(Quiz).order_by(Quiz.created_at.desc()).all()
+    quizzes = (
+        db.query(Quiz)
+        .filter(Quiz.status == "published")
+        .order_by(Quiz.created_at.desc())
+        .all()
+    )
     all_roles = db.query(JobRole).all()
 
     # Determine role-relevant competency codes if learner has an assigned job role
@@ -301,11 +306,11 @@ def get_assessment_details(
     current_user: User = Depends(require_roles("learner")),
     db: Session = Depends(get_db),
 ) -> AssessmentDetailResponse:
-    quiz = db.query(Quiz).filter(Quiz.id == quiz_id).first()
+    quiz = db.query(Quiz).filter(Quiz.id == quiz_id, Quiz.status == "published").first()
     if not quiz:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Assessment with ID '{quiz_id}' was not found.",
+            detail=f"Assessment with ID '{quiz_id}' was not found or is not published.",
         )
 
     try:
@@ -345,11 +350,11 @@ def submit_assessment(
     current_user: User = Depends(require_roles("learner")),
     db: Session = Depends(get_db),
 ) -> AssessmentResultResponse:
-    quiz = db.query(Quiz).filter(Quiz.id == quiz_id).first()
+    quiz = db.query(Quiz).filter(Quiz.id == quiz_id, Quiz.status == "published").first()
     if not quiz:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Assessment with ID '{quiz_id}' was not found.",
+            detail=f"Assessment with ID '{quiz_id}' was not found or is not published.",
         )
 
     # 1. Fetch benchmark targets for learner's job role

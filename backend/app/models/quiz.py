@@ -37,12 +37,23 @@ class Quiz(Base, UUIDPrimaryKeyMixin, TimestampMixin):
             "passing_marks >= 0 AND passing_marks <= total_marks",
             name="ck_quiz_passing_marks",
         ),
+        CheckConstraint(
+            "status IN ('draft', 'published', 'archived')",
+            name="ck_quiz_status",
+        ),
     )
 
     title: Mapped[str] = mapped_column(
         String(255),
         nullable=False,
         doc="Quiz title or evaluation name",
+    )
+    status: Mapped[str] = mapped_column(
+        String(50),
+        nullable=False,
+        default="published",
+        index=True,
+        doc="Publishing status: draft, published, archived",
     )
     course_id: Mapped[Optional[uuid.UUID]] = mapped_column(
         SQLiteUUID(),

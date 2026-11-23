@@ -209,6 +209,89 @@ class DeterministicGroundedGenerator(BaseRAGGenerator):
         )
 
 
+class GroqRAGGenerator(BaseRAGGenerator):
+    """Groq hosted RAG generator using high-speed Llama models (e.g. llama-3.3-70b-versatile)."""
+
+    def __init__(self, api_key: str, model_name: str = "llama-3.3-70b-versatile"):
+        self.api_key = api_key
+        self.model_name = model_name
+
+    def generate_answer(
+        self,
+        question: str,
+        chunks: List[RetrievedChunk],
+    ) -> GroundedAnswerResult:
+        if not chunks:
+            return GroundedAnswerResult(
+                answer="I cannot find sufficient supporting information in your authorized training documents.",
+                citations=[],
+                is_grounded=False,
+                refusal_reason="insufficient_evidence",
+                retrieved_chunk_count=0,
+            )
+
+        context_parts = []
+        for idx, c in enumerate(chunks, start=1):
+            context_parts.append(
+                f'<document_chunk id="[{idx}]" document="{c.document_title}">\n{c.chunk_text}\n</document_chunk>'
+            )
+
+        context_block = "\n\n".join(context_parts)
+        prompt = SYSTEM_RAG_PROMPT_TEMPLATE.format(context=context_block, question=question)
+
+        try:
+            with httpx.Client(timeout=20.0) as client:
+                res = client.post(
+                    "https://api.groq.com/openai/v1/chat/completions",
+                    headers={
+                        "Authorization": f"Bearer {self.api_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json={
+                        "model": self.model_name,
+                        "messages": [{"role": "user", "content": prompt}],
+                        "temperature": 0.2,
+                    },
+                )
+                if res.status_code != 200:
+                    raise RuntimeError(f"Groq API error {res.status_code}: {res.text}")
+                content = res.json()["choices"][0]["message"]["content"]
+
+                # Extract citations
+                citations: List[SourceCitationData] = []
+                for idx, c in enumerate(chunks, start=1):
+                    tag = f"[{idx}]"
+                    if tag in content:
+                        citations.append(
+                            SourceCitationData(
+                                citation_id=tag,
+                                document_id=c.document_id,
+                                document_title=c.document_title,
+                                chunk_id=c.chunk_id,
+                                chunk_index=c.chunk_index,
+                                excerpt=c.chunk_text[:200] + "...",
+                                similarity_score=c.similarity_score,
+                                page_number=c.metadata_json.get("page_number"),
+                            )
+                        )
+
+                is_refusal = (
+                    "cannot find sufficient" in content.lower()
+                    or "insufficient supporting information" in content.lower()
+                )
+
+                return GroundedAnswerResult(
+                    answer=content,
+                    citations=citations,
+                    is_grounded=not is_refusal,
+                    refusal_reason="insufficient_evidence" if is_refusal else None,
+                    retrieved_chunk_count=len(chunks),
+                )
+        except Exception:
+            # Safe fallback to deterministic offline generator
+            return DeterministicGroundedGenerator().generate_answer(question, chunks)
+
+
 class OpenAIRAGGenerator(BaseRAGGenerator):
     """OpenAI hosted RAG generator using gpt-4o-mini / gpt-3.5-turbo."""
 
@@ -308,6 +391,16 @@ class RAGService:
             raise RuntimeError(
                 "Production configuration error: Mock RAG LLM provider is strictly forbidden in production."
             )
+
+        if prov == "groq":
+            if not settings.GROQ_API_KEY or settings.GROQ_API_KEY.startswith("gsk-placeholder"):
+                if is_production:
+                    raise RuntimeError("Production configuration error: Valid GROQ_API_KEY is required in production.")
+            else:
+                return GroqRAGGenerator(
+                    api_key=settings.GROQ_API_KEY,
+                    model_name=settings.RAG_LLM_MODEL or "llama-3.3-70b-versatile",
+                )
 
         if prov == "openai":
             if not settings.OPENAI_API_KEY or settings.OPENAI_API_KEY.startswith("sk-placeholder"):

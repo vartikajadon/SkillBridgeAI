@@ -29,12 +29,14 @@ import {
   TrendingUp,
   Users,
 } from 'lucide-react';
+import { useChartTheme } from '../../hooks/useChartTheme';
 
 interface AdminOverviewChartsProps {
   sessionToken: string;
 }
 
 export const AdminOverviewCharts: React.FC<AdminOverviewChartsProps> = ({ sessionToken }) => {
+  const chartTheme = useChartTheme();
   const [metrics, setMetrics] = useState<AdminExecutiveMetrics | null>(null);
   const [trends, setTrends] = useState<MonthlyTrendPoint[]>([]);
   const [departments, setDepartments] = useState<DepartmentCompetencyMetric[]>([]);
@@ -97,93 +99,93 @@ export const AdminOverviewCharts: React.FC<AdminOverviewChartsProps> = ({ sessio
       {/* KPI Cards Grid */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
         {/* Metric 1 */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-2">
-          <div className="flex items-center justify-between text-slate-400 text-xs">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-2 shadow-sm">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs">
             <span>Total Learners</span>
-            <Users className="w-4 h-4 text-indigo-400" />
+            <Users className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
           </div>
-          <div className="text-2xl font-bold text-white">{metrics.total_learners}</div>
-          <div className="text-[11px] text-emerald-400 font-mono">
+          <div className="text-2xl font-bold text-slate-900 dark:text-white">{metrics.total_learners}</div>
+          <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-mono">
             {metrics.active_learner_accounts} active accounts
           </div>
         </div>
 
         {/* Metric 2 */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-2">
-          <div className="flex items-center justify-between text-slate-400 text-xs">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-2 shadow-sm">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs">
             <span>Course Completion Rate</span>
-            <GraduationCap className="w-4 h-4 text-emerald-400" />
+            <GraduationCap className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
           </div>
-          <div className="text-2xl font-bold text-white">{metrics.course_completion_rate}%</div>
-          <div className="text-[11px] text-slate-400">of commenced enrollments</div>
+          <div className="text-2xl font-bold text-slate-900 dark:text-white">{metrics.course_completion_rate}%</div>
+          <div className="text-[11px] text-slate-500 dark:text-slate-400">of commenced enrollments</div>
         </div>
 
         {/* Metric 3 */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-2">
-          <div className="flex items-center justify-between text-slate-400 text-xs">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-2 shadow-sm">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs">
             <span>Assessment Avg Score</span>
-            <Award className="w-4 h-4 text-amber-400" />
+            <Award className="w-4 h-4 text-amber-500 dark:text-amber-400" />
           </div>
-          <div className="text-2xl font-bold text-white">{metrics.average_assessment_score}%</div>
-          <div className="text-[11px] text-slate-400">completed attempts only</div>
+          <div className="text-2xl font-bold text-slate-900 dark:text-white">{metrics.average_assessment_score}%</div>
+          <div className="text-[11px] text-slate-500 dark:text-slate-400">completed attempts only</div>
         </div>
 
         {/* Metric 4 */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-2">
-          <div className="flex items-center justify-between text-slate-400 text-xs">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-2 shadow-sm">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs">
             <span>Quiz Pass Rate</span>
-            <CheckCircle className="w-4 h-4 text-emerald-400" />
+            <CheckCircle className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
           </div>
-          <div className="text-2xl font-bold text-white">{metrics.quiz_pass_rate}%</div>
-          <div className="text-[11px] text-slate-400">benchmarked attempts</div>
+          <div className="text-2xl font-bold text-slate-900 dark:text-white">{metrics.quiz_pass_rate}%</div>
+          <div className="text-[11px] text-slate-500 dark:text-slate-400">benchmarked attempts</div>
         </div>
 
         {/* Metric 5 */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-2">
-          <div className="flex items-center justify-between text-slate-400 text-xs">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-2 shadow-sm">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs">
             <span>Total Courses</span>
-            <BookOpen className="w-4 h-4 text-blue-400" />
+            <BookOpen className="w-4 h-4 text-blue-500 dark:text-blue-400" />
           </div>
-          <div className="text-2xl font-bold text-white">{metrics.total_courses}</div>
-          <div className="text-[11px] text-blue-400 font-mono">
+          <div className="text-2xl font-bold text-slate-900 dark:text-white">{metrics.total_courses}</div>
+          <div className="text-[11px] text-blue-600 dark:text-blue-400 font-mono">
             {metrics.published_courses} published
           </div>
         </div>
 
         {/* Metric 6 */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-2">
-          <div className="flex items-center justify-between text-slate-400 text-xs">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-2 shadow-sm">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs">
             <span>Document Pub Ratio</span>
-            <FileText className="w-4 h-4 text-purple-400" />
+            <FileText className="w-4 h-4 text-purple-500 dark:text-purple-400" />
           </div>
-          <div className="text-2xl font-bold text-white">{metrics.document_publication_ratio}%</div>
-          <div className="text-[11px] text-purple-400 font-mono">
+          <div className="text-2xl font-bold text-slate-900 dark:text-white">{metrics.document_publication_ratio}%</div>
+          <div className="text-[11px] text-purple-600 dark:text-purple-400 font-mono">
             {metrics.published_documents} of {metrics.total_documents} docs
           </div>
         </div>
 
         {/* Metric 7 */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-2">
-          <div className="flex items-center justify-between text-slate-400 text-xs">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-2 shadow-sm">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs">
             <span>Assessment Attempts</span>
-            <FileCheck className="w-4 h-4 text-indigo-400" />
+            <FileCheck className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
           </div>
-          <div className="text-2xl font-bold text-white">{metrics.completed_quiz_attempts}</div>
-          <div className="text-[11px] text-slate-400 font-mono">
+          <div className="text-2xl font-bold text-slate-900 dark:text-white">{metrics.completed_quiz_attempts}</div>
+          <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
             {metrics.total_quiz_attempts} total submissions
           </div>
         </div>
 
         {/* Metric 8 */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-4 space-y-2">
-          <div className="flex items-center justify-between text-slate-400 text-xs">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 space-y-2 shadow-sm">
+          <div className="flex items-center justify-between text-slate-500 dark:text-slate-400 text-xs">
             <span>Training Staff</span>
-            <Activity className="w-4 h-4 text-rose-400" />
+            <Activity className="w-4 h-4 text-rose-500 dark:text-rose-400" />
           </div>
-          <div className="text-2xl font-bold text-white">
+          <div className="text-2xl font-bold text-slate-900 dark:text-white">
             {metrics.total_trainers + metrics.total_admins}
           </div>
-          <div className="text-[11px] text-slate-400">
+          <div className="text-[11px] text-slate-500 dark:text-slate-400">
             {metrics.total_trainers} trainers • {metrics.total_admins} admins
           </div>
         </div>
@@ -192,13 +194,13 @@ export const AdminOverviewCharts: React.FC<AdminOverviewChartsProps> = ({ sessio
       {/* Visual Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Trend AreaChart */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-4">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 space-y-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
-              <TrendingUp className="w-4 h-4 text-indigo-400" />
+            <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
               <span>Learner Engagement Telemetry (6 Months)</span>
             </h3>
-            <span className="text-[11px] text-slate-400 font-mono">MAL vs Registrations</span>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">MAL vs Registrations</span>
           </div>
 
           <div className="h-64 w-full">
@@ -214,11 +216,17 @@ export const AdminOverviewCharts: React.FC<AdminOverviewChartsProps> = ({ sessio
                     <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" />
-                <XAxis dataKey="month" stroke="#64748B" fontSize={11} />
-                <YAxis stroke="#64748B" fontSize={11} allowDecimals={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.gridStroke} />
+                <XAxis dataKey="month" stroke={chartTheme.axisStroke} fontSize={11} />
+                <YAxis stroke={chartTheme.axisStroke} fontSize={11} allowDecimals={false} />
                 <Tooltip
-                  contentStyle={{ backgroundColor: '#0F172A', borderColor: '#334155', fontSize: '11px' }}
+                  contentStyle={{
+                    backgroundColor: chartTheme.tooltipBg,
+                    borderColor: chartTheme.tooltipBorder,
+                    color: chartTheme.tooltipText,
+                    fontSize: '11px',
+                    borderRadius: '0.5rem',
+                  }}
                 />
                 <Legend wrapperStyle={{ fontSize: '11px' }} />
                 <Area
@@ -243,23 +251,29 @@ export const AdminOverviewCharts: React.FC<AdminOverviewChartsProps> = ({ sessio
         </div>
 
         {/* Activity BarChart */}
-        <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-4">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 space-y-4 shadow-sm">
           <div className="flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
-              <Clock className="w-4 h-4 text-emerald-400" />
+            <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+              <Clock className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
               <span>Learning Events & Assessments</span>
             </h3>
-            <span className="text-[11px] text-slate-400 font-mono">Attempts vs Completions</span>
+            <span className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">Attempts vs Completions</span>
           </div>
 
           <div className="h-64 w-full">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={trends} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1E293B" />
-                <XAxis dataKey="month" stroke="#64748B" fontSize={11} />
-                <YAxis stroke="#64748B" fontSize={11} allowDecimals={false} />
+                <CartesianGrid strokeDasharray="3 3" stroke={chartTheme.gridStroke} />
+                <XAxis dataKey="month" stroke={chartTheme.axisStroke} fontSize={11} />
+                <YAxis stroke={chartTheme.axisStroke} fontSize={11} allowDecimals={false} />
                 <Tooltip
-                  contentStyle={{ backgroundColor: '#0F172A', borderColor: '#334155', fontSize: '11px' }}
+                  contentStyle={{
+                    backgroundColor: chartTheme.tooltipBg,
+                    borderColor: chartTheme.tooltipBorder,
+                    color: chartTheme.tooltipText,
+                    fontSize: '11px',
+                    borderRadius: '0.5rem',
+                  }}
                 />
                 <Legend wrapperStyle={{ fontSize: '11px' }} />
                 <Bar dataKey="quiz_attempts" name="Completed Assessments" fill="#818CF8" radius={[4, 4, 0, 0]} />
@@ -271,19 +285,19 @@ export const AdminOverviewCharts: React.FC<AdminOverviewChartsProps> = ({ sessio
       </div>
 
       {/* Department Breakdown Table */}
-      <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 space-y-4">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6 space-y-4 shadow-sm">
         <div className="flex items-center justify-between">
-          <h3 className="text-sm font-semibold text-slate-200 flex items-center gap-2">
-            <Award className="w-4 h-4 text-amber-400" />
+          <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-200 flex items-center gap-2">
+            <Award className="w-4 h-4 text-amber-500 dark:text-amber-400" />
             <span>Departmental Competency Proficiency & Skill Deficit Index</span>
           </h3>
-          <span className="text-[11px] text-slate-400">
+          <span className="text-[11px] text-slate-500 dark:text-slate-400">
             {departments.length} Ministries Monitored
           </span>
         </div>
 
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs text-slate-300">
+          <table className="w-full text-left text-xs text-slate-700 dark:text-slate-300">
             <thead className="text-[11px] uppercase bg-slate-950/80 text-slate-400 border-b border-slate-800">
               <tr>
                 <th className="py-2.5 px-3">Ministry / Department</th>

@@ -68,6 +68,31 @@ def test_production_rejects_missing_or_placeholder_openai_key():
     assert "Valid OPENAI_API_KEY is required in production" in str(exc_info.value)
 
 
+def test_production_rejects_missing_or_placeholder_groq_key():
+    prod_settings = Settings(
+        ENVIRONMENT="production",
+        EMBEDDING_PROVIDER="openai",
+        RAG_LLM_PROVIDER="groq",
+        OPENAI_API_KEY="sk-valid-key-abcdefghijklmnopqrstuvwxyz123",
+        GROQ_API_KEY="gsk-placeholder-key",
+    )
+    with pytest.raises(RuntimeError) as exc_info:
+        validate_rag_providers_for_environment(prod_settings)
+    assert "Valid GROQ_API_KEY is required in production" in str(exc_info.value)
+
+
+def test_production_accepts_valid_groq_configuration():
+    prod_settings = Settings(
+        ENVIRONMENT="production",
+        EMBEDDING_PROVIDER="openai",
+        RAG_LLM_PROVIDER="groq",
+        OPENAI_API_KEY="sk-valid-key-abcdefghijklmnopqrstuvwxyz123",
+        GROQ_API_KEY="gsk_1234567890abcdefghijklmnopqrstuvwxyz",
+    )
+    # Should not raise
+    validate_rag_providers_for_environment(prod_settings)
+
+
 def test_production_accepts_valid_openai_configuration():
     prod_settings = Settings(
         ENVIRONMENT="production",

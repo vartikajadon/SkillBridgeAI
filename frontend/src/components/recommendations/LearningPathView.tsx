@@ -200,7 +200,7 @@ export const LearningPathView: React.FC<Props> = ({
       )}
 
       {/* Sequenced Roadmap Timeline */}
-      <div className="relative border-l-2 border-indigo-950 ml-4 sm:ml-6 space-y-8 pb-4">
+      <div className="relative border-l-2 border-indigo-200 dark:border-indigo-950 ml-4 sm:ml-6 space-y-8 pb-4">
         {data.steps.map((step) => {
           const isHigh = step.priority === 'High';
 
@@ -210,67 +210,67 @@ export const LearningPathView: React.FC<Props> = ({
               <div
                 className={`absolute -left-[17px] top-1.5 w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold text-xs transition ${
                   step.is_enrolled
-                    ? 'bg-emerald-950 border-emerald-500 text-emerald-300 ring-4 ring-slate-950'
-                    : 'bg-indigo-950 border-indigo-500 text-indigo-200 ring-4 ring-slate-950'
+                    ? 'bg-emerald-100 dark:bg-emerald-950 border-emerald-500 text-emerald-800 dark:text-emerald-300 ring-4 ring-slate-50 dark:ring-slate-950'
+                    : 'bg-indigo-100 dark:bg-indigo-950 border-indigo-500 text-indigo-800 dark:text-indigo-200 ring-4 ring-slate-50 dark:ring-slate-950'
                 }`}
               >
                 {step.step_number}
               </div>
 
               {/* Step Card Content */}
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 sm:p-6 space-y-4 shadow-xl hover:border-slate-700 transition">
+              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 space-y-4 shadow-sm hover:shadow-md transition">
                 <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
                   <div className="space-y-1">
                     <div className="flex items-center space-x-2">
-                      <span className="text-[10px] font-mono font-bold text-slate-400 uppercase tracking-wider">
+                      <span className="text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
                         Step {step.step_number} • {step.code}
                       </span>
-                      <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-950 text-indigo-300 border border-indigo-800 font-semibold">
+                      <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 font-semibold">
                         Delivers Level {step.target_level_achieved}
                       </span>
                     </div>
-                    <h3 className="text-base font-bold text-white">{step.title}</h3>
+                    <h3 className="text-base font-bold text-slate-900 dark:text-white">{step.title}</h3>
                   </div>
 
                   <div className="flex items-center space-x-2 shrink-0">
                     <span
                       className={`text-[10px] px-2 py-0.5 rounded-full font-bold border flex items-center space-x-1 ${
                         isHigh
-                          ? 'bg-emerald-950 text-emerald-300 border-emerald-800'
-                          : 'bg-amber-950 text-amber-300 border-amber-800'
+                          ? 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800'
+                          : 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800'
                       }`}
                     >
                       <Zap className="w-3 h-3" />
                       <span>{step.priority} Priority</span>
                     </span>
-                    <span className="text-xs font-semibold text-indigo-400">
+                    <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">
                       {step.relevance_score.toFixed(0)} pts
                     </span>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs text-slate-300 py-2 border-y border-slate-800/80">
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs text-slate-700 dark:text-slate-300 py-2 border-y border-slate-200 dark:border-slate-800/80">
                   <div className="flex items-center space-x-1.5">
-                    <Layers className="w-3.5 h-3.5 text-cyan-400" />
+                    <Layers className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
                     <span className="truncate">{step.provider}</span>
                   </div>
                   <div className="flex items-center space-x-1.5">
-                    <Clock className="w-3.5 h-3.5 text-indigo-400" />
+                    <Clock className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
                     <span>{step.duration_hours} Training Hours</span>
                   </div>
                   <div className="flex items-center space-x-1.5 col-span-2 sm:col-span-1">
-                    <Award className="w-3.5 h-3.5 text-amber-400" />
+                    <Award className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
                     <span>{step.competencies_addressed.join(', ')}</span>
                   </div>
                 </div>
 
                 {/* Plain-Language Reason */}
-                <div className="p-3 bg-slate-950/70 border border-slate-800 rounded-xl text-xs space-y-1">
-                  <div className="flex items-center space-x-1.5 text-indigo-400 text-[11px] font-semibold">
+                <div className="p-3 bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 rounded-xl text-xs space-y-1">
+                  <div className="flex items-center space-x-1.5 text-indigo-600 dark:text-indigo-400 text-[11px] font-semibold">
                     <Sparkles className="w-3.5 h-3.5" />
                     <span>Pedagogical Role</span>
                   </div>
-                  <p className="text-slate-300 text-[11px] leading-relaxed">
+                  <p className="text-slate-600 dark:text-slate-300 text-[11px] leading-relaxed">
                     {step.reason}
                   </p>
                 </div>
@@ -278,7 +278,7 @@ export const LearningPathView: React.FC<Props> = ({
                 {/* Footer / Enroll action */}
                 <div className="flex items-center justify-between pt-2">
                   {step.is_enrolled ? (
-                    <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800 font-semibold flex items-center space-x-1.5">
+                    <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800 font-semibold flex items-center space-x-1.5">
                       <CheckCircle className="w-3.5 h-3.5" />
                       <span>
                         {step.enrollment_status === 'in_progress'
@@ -287,7 +287,7 @@ export const LearningPathView: React.FC<Props> = ({
                       </span>
                     </span>
                   ) : (
-                    <span className="text-[11px] text-slate-400">
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400">
                       Ready to add to your active learning plan
                     </span>
                   )}
@@ -313,7 +313,7 @@ export const LearningPathView: React.FC<Props> = ({
                   ) : (
                     <button
                       disabled
-                      className="px-3 py-1.5 bg-slate-800 text-slate-400 rounded-xl text-xs font-medium cursor-default"
+                      className="px-3 py-1.5 bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 rounded-xl text-xs font-medium cursor-default"
                     >
                       Step Active
                     </button>

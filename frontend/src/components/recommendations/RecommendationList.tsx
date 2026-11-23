@@ -208,16 +208,16 @@ export const RecommendationList: React.FC<Props> = ({
       )}
 
       {/* Controls: Search & Filter Pills */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-900 border border-slate-800 rounded-xl p-3">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-3 shadow-sm">
         {/* Search */}
         <div className="relative flex-1 max-w-md">
-          <Search className="w-4 h-4 text-slate-500 absolute left-3 top-2.5" />
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
           <input
             type="text"
             placeholder="Search by course title, code, or competency..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full bg-slate-950 border border-slate-800 rounded-lg pl-9 pr-3 py-1.5 text-xs text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition"
+            className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg pl-9 pr-3 py-1.5 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500 transition"
           />
         </div>
 
@@ -228,7 +228,7 @@ export const RecommendationList: React.FC<Props> = ({
             className={`px-3 py-1.5 rounded-lg font-medium transition ${
               filter === 'all'
                 ? 'bg-indigo-600 text-white'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800'
             }`}
           >
             All ({data.recommendations.length})
@@ -238,7 +238,7 @@ export const RecommendationList: React.FC<Props> = ({
             className={`px-3 py-1.5 rounded-lg font-medium transition ${
               filter === 'high'
                 ? 'bg-indigo-600 text-white'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800'
             }`}
           >
             High Priority
@@ -248,7 +248,7 @@ export const RecommendationList: React.FC<Props> = ({
             className={`px-3 py-1.5 rounded-lg font-medium transition ${
               filter === 'unenrolled'
                 ? 'bg-indigo-600 text-white'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800'
             }`}
           >
             Available to Enroll
@@ -258,7 +258,7 @@ export const RecommendationList: React.FC<Props> = ({
             className={`px-3 py-1.5 rounded-lg font-medium transition ${
               filter === 'enrolled'
                 ? 'bg-indigo-600 text-white'
-                : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800'
             }`}
           >
             Enrolled
@@ -268,10 +268,10 @@ export const RecommendationList: React.FC<Props> = ({
 
       {/* Cards Grid */}
       {filteredRecs.length === 0 ? (
-        <div className="p-12 text-center bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
-          <BookOpen className="w-10 h-10 text-slate-500 mx-auto" />
-          <h3 className="text-base font-semibold text-slate-200">No Matching Courses Found</h3>
-          <p className="text-xs text-slate-400 max-w-md mx-auto">
+        <div className="p-12 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-3 shadow-sm">
+          <BookOpen className="w-10 h-10 text-slate-400 dark:text-slate-500 mx-auto" />
+          <h3 className="text-base font-semibold text-slate-800 dark:text-slate-200">No Matching Courses Found</h3>
+          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
             {searchQuery
               ? 'Try modifying your search keywords or resetting filters.'
               : 'All role requirements are currently satisfied or no courses match the filter.'}

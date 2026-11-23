@@ -83,6 +83,21 @@ export interface TrainerLearnerAttemptItem {
   completed_at: string | null;
 }
 
+export interface TrainerCourseItem {
+  id: string;
+  code: string;
+  title: string;
+  description: string | null;
+  provider: string;
+  duration_hours: number;
+  status: 'draft' | 'published' | 'archived' | string;
+  target_role?: string | null;
+  competencies: string[];
+  enrollments_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface TrainerDashboardResponse {
   summary: TrainerSummaryMetrics;
   documents: TrainerDocumentItem[];

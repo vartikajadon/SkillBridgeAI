@@ -143,9 +143,9 @@ def test_deterministic_seed_is_idempotent(db_session):
     quiz_count_1 = db_session.query(Quiz).count()
     user_count_1 = db_session.query(User).count()
 
-    assert role_count_1 == 2
+    assert role_count_1 == 4
     assert comp_count_1 == 12
-    assert course_count_1 == 20
+    assert course_count_1 == 5
     assert quiz_count_1 == 2
     assert user_count_1 == 3
 

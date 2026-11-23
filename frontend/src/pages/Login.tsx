@@ -12,6 +12,7 @@ import {
   ShieldCheck,
   GraduationCap,
 } from 'lucide-react';
+import { ThemeToggle } from '../components/ThemeToggle';
 
 const MOCK_ACCOUNTS = [
   {
@@ -97,25 +98,28 @@ export const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 flex flex-col justify-center py-12 sm:px-6 lg:px-8 text-slate-100">
+    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 flex flex-col justify-center py-12 sm:px-6 lg:px-8 transition-colors duration-150 relative">
+      <div className="absolute top-4 right-4">
+        <ThemeToggle />
+      </div>
       <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
         <Link to="/" className="inline-flex items-center space-x-2">
           <div className="h-10 w-10 rounded-lg bg-indigo-600 flex items-center justify-center shadow-lg shadow-indigo-500/20">
             <Cpu className="h-6 w-6 text-white" />
           </div>
-          <span className="text-2xl font-bold tracking-tight text-white">
-            SkillBridge <span className="text-indigo-400">AI</span>
+          <span className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
+            SkillBridge <span className="text-indigo-600 dark:text-indigo-400">AI</span>
           </span>
         </Link>
-        <h2 className="mt-4 text-2xl font-bold tracking-tight text-white">Civil Service Portal Login</h2>
-        <p className="mt-1 text-sm text-slate-400">Sign in with your government email or use quick test credentials</p>
+        <h2 className="mt-4 text-2xl font-bold tracking-tight text-slate-900 dark:text-white">Civil Service Portal Login</h2>
+        <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">Sign in with your government email or use quick test credentials</p>
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-slate-900 border border-slate-800 py-8 px-6 shadow-2xl rounded-xl sm:px-10 space-y-6">
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 py-8 px-6 shadow-xl dark:shadow-2xl rounded-2xl sm:px-10 space-y-6">
           {/* Quick Mock Credentials Selector */}
-          <div className="p-4 bg-slate-950/80 border border-indigo-900/60 rounded-xl space-y-3">
-            <div className="flex items-center space-x-2 text-indigo-400 text-xs font-bold uppercase tracking-wider">
+          <div className="p-4 bg-slate-50 dark:bg-slate-950/80 border border-indigo-100 dark:border-indigo-900/60 rounded-xl space-y-3">
+            <div className="flex items-center space-x-2 text-indigo-600 dark:text-indigo-400 text-xs font-bold uppercase tracking-wider">
               <Sparkles className="w-3.5 h-3.5" />
               <span>Quick Mock Logins (Click to Test)</span>
             </div>
@@ -147,15 +151,15 @@ export const Login: React.FC = () => {
           </div>
 
           <div className="relative flex items-center justify-center">
-            <div className="border-t border-slate-800 w-full" />
-            <span className="bg-slate-900 px-3 text-[11px] font-medium text-slate-500 uppercase tracking-wider shrink-0">
+            <div className="border-t border-slate-200 dark:border-slate-800 w-full" />
+            <span className="bg-white dark:bg-slate-900 px-3 text-[11px] font-medium text-slate-500 uppercase tracking-wider shrink-0">
               Or sign in manually
             </span>
-            <div className="border-t border-slate-800 w-full" />
+            <div className="border-t border-slate-200 dark:border-slate-800 w-full" />
           </div>
 
           {errorMsg && (
-            <div className="bg-rose-950/60 border border-rose-800/80 p-3 rounded-lg flex items-start space-x-2 text-rose-300 text-sm">
+            <div className="bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800/80 p-3 rounded-lg flex items-start space-x-2 text-rose-700 dark:text-rose-300 text-sm">
               <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
               <span>{errorMsg}</span>
             </div>
@@ -163,10 +167,10 @@ export const Login: React.FC = () => {
 
           <form className="space-y-4" onSubmit={handleSubmit}>
             <div>
-              <label className="block text-xs font-medium text-slate-300">Official Email</label>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Official Email</label>
               <div className="mt-1 relative rounded-md shadow-sm">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Mail className="h-4 w-4 text-slate-500" />
+                  <Mail className="h-4 w-4 text-slate-400 dark:text-slate-500" />
                 </div>
                 <input
                   type="email"
@@ -174,16 +178,16 @@ export const Login: React.FC = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="officer@gov.in"
-                  className="block w-full pl-10 pr-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="block w-full pl-10 pr-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-300">Password</label>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Password</label>
               <div className="mt-1 relative rounded-md shadow-sm">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                  <Lock className="h-4 w-4 text-slate-500" />
+                  <Lock className="h-4 w-4 text-slate-400 dark:text-slate-500" />
                 </div>
                 <input
                   type="password"
@@ -191,11 +195,11 @@ export const Login: React.FC = () => {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
-                  className="block w-full pl-10 pr-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  className="block w-full pl-10 pr-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                 />
               </div>
               <p className="text-[11px] text-slate-500 mt-1">
-                For mock accounts, enter password: <span className="font-mono text-slate-300">password123</span>
+                For mock accounts, enter password: <span className="font-mono text-slate-700 dark:text-slate-300">password123</span>
               </p>
             </div>
 
@@ -215,9 +219,9 @@ export const Login: React.FC = () => {
             </button>
           </form>
 
-          <div className="pt-2 text-center text-xs text-slate-400">
+          <div className="pt-2 text-center text-xs text-slate-500 dark:text-slate-400">
             <span>New civil servant? </span>
-            <Link to="/register" className="font-medium text-indigo-400 hover:text-indigo-300">
+            <Link to="/register" className="font-medium text-indigo-600 dark:text-indigo-400 hover:underline">
               Register Learner Account
             </Link>
           </div>

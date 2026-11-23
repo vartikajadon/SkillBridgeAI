@@ -121,11 +121,43 @@ def generate_llm_mcqs(
     difficulty_level: int = 3,
     total_marks: int = 100,
     api_key: Optional[str] = None,
+    provider: Optional[str] = None,
 ) -> List[Dict[str, Any]]:
-    """Generates structured MCQs from document chunks using a configured LLM provider."""
-    key = api_key or os.getenv("OPENAI_API_KEY") or getattr(settings, "OPENAI_API_KEY", None)
+    """Generates structured MCQs from document chunks using a configured LLM provider (Groq or OpenAI)."""
+    # Detect provider and key
+    selected_provider = (provider or getattr(settings, "RAG_LLM_PROVIDER", "")).strip().lower()
+    groq_key = os.getenv("GROQ_API_KEY") or getattr(settings, "GROQ_API_KEY", None)
+    openai_key = os.getenv("OPENAI_API_KEY") or getattr(settings, "OPENAI_API_KEY", None)
+
+    if api_key:
+        key = api_key
+        if key.startswith("gsk_") or selected_provider == "groq":
+            is_groq = True
+        else:
+            is_groq = False
+    elif selected_provider == "groq" or (groq_key and not groq_key.startswith("gsk-placeholder")):
+        key = groq_key
+        is_groq = True
+    elif openai_key and not openai_key.startswith("sk-placeholder"):
+        key = openai_key
+        is_groq = False
+    else:
+        key = None
+        is_groq = False
+
     if not key or "placeholder" in key.lower():
         raise ValueError("No valid LLM API key configured.")
+
+    if is_groq:
+        api_url = "https://api.groq.com/openai/v1/chat/completions"
+        model = getattr(settings, "RAG_LLM_MODEL", None)
+        if not model or "llama" not in model.lower():
+            model = "llama-3.3-70b-versatile"
+    else:
+        api_url = "https://api.openai.com/v1/chat/completions"
+        model = getattr(settings, "RAG_LLM_MODEL", None)
+        if not model or "gpt" not in model.lower():
+            model = "gpt-4o-mini"
 
     chunk_context = "\n---\n".join(
         [f"[Chunk {c.chunk_index}]: {c.chunk_text}" for c in chunks[:6]]
@@ -169,7 +201,7 @@ Output format must be strictly a JSON object with a 'questions' array:
         "Content-Type": "application/json",
     }
     payload = {
-        "model": "gpt-4o-mini",
+        "model": model,
         "messages": [
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_prompt},
@@ -180,7 +212,7 @@ Output format must be strictly a JSON object with a 'questions' array:
 
     with httpx.Client(timeout=30.0) as client:
         response = client.post(
-            "https://api.openai.com/v1/chat/completions",
+            api_url,
             headers=headers,
             json=payload,
         )
@@ -228,13 +260,13 @@ def generate_quiz_from_document(
             total_marks=total_marks,
         )
 
-    # Check for configured LLM key
-    has_key = bool(
-        os.getenv("OPENAI_API_KEY")
-        and not os.getenv("OPENAI_API_KEY", "").startswith("sk-placeholder")
-    )
+    # Check for configured LLM key (Groq or OpenAI)
+    groq_key = os.getenv("GROQ_API_KEY") or getattr(settings, "GROQ_API_KEY", None)
+    has_groq_key = bool(groq_key and not str(groq_key).startswith("gsk-placeholder") and len(str(groq_key).strip()) >= 10)
+    openai_key = os.getenv("OPENAI_API_KEY") or getattr(settings, "OPENAI_API_KEY", None)
+    has_openai_key = bool(openai_key and not str(openai_key).startswith("sk-placeholder") and len(str(openai_key).strip()) >= 10)
 
-    if has_key:
+    if has_groq_key or has_openai_key:
         try:
             return generate_llm_mcqs(
                 chunks=chunks,
@@ -242,6 +274,7 @@ def generate_quiz_from_document(
                 question_count=question_count,
                 difficulty_level=difficulty_level,
                 total_marks=total_marks,
+                provider="groq" if has_groq_key else "openai",
             )
         except Exception:
             # Fall back safely if API failed or timed out

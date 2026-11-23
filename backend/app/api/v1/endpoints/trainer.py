@@ -12,16 +12,19 @@ from sqlalchemy.orm import Session
 from app.api.deps import require_roles
 from app.db.session import get_db
 from app.models.competency import Competency
+from app.models.course import Course, CourseCompetency, Enrollment
 from app.models.document import DocumentChunk, TrainingDocument
 from app.models.quiz import Quiz, QuizAttempt
 from app.models.user import User
 from app.schemas.trainer import (
+    CoursePublishResponse,
     DocumentPublishResponse,
     DocumentUploadResponse,
     QuizDeleteResponse,
     QuizGenerateRequest,
     QuizPublishResponse,
     QuizUpdateRequest,
+    TrainerCourseItem,
     TrainerDocumentItem,
     TrainerQuizDetailResponse,
     TrainerQuizListItem,
@@ -576,4 +579,116 @@ def delete_quiz(
         id=quiz_id,
         status="deleted",
         message=f"Quiz '{quiz.title}' was deleted successfully.",
+    )
+
+
+# -----------------------------------------------------------------------------
+# 4. Course Curriculum Review & Publishing
+# -----------------------------------------------------------------------------
+
+@router.get(
+    "/courses",
+    response_model=List[TrainerCourseItem],
+    summary="List training courses for review and publishing",
+    description="Returns courses with mapped competencies, enrollment counts, and publishing status.",
+)
+def list_trainer_courses(
+    current_user: User = Depends(require_roles("trainer", "admin")),
+    db: Session = Depends(get_db),
+) -> List[TrainerCourseItem]:
+    courses = db.query(Course).order_by(Course.created_at.desc()).all()
+    results = []
+
+    for c in courses:
+        comp_codes = []
+        for cc in c.course_competencies:
+            comp = db.query(Competency).filter(Competency.id == cc.competency_id).first()
+            if comp:
+                comp_codes.append(comp.code)
+
+        # Detect target role from code or description
+        target_role = "General Civil Service"
+        if "DA" in c.code or "Data Analyst" in (c.description or ""):
+            target_role = "Data Analyst"
+        elif "BA" in c.code or "Business Analyst" in (c.description or ""):
+            target_role = "Business Analyst"
+        elif "FA" in c.code or "Finance" in (c.description or "") or "PFMS" in c.title:
+            target_role = "Finance Assistant"
+
+        enrollment_count = db.query(Enrollment).filter(Enrollment.course_id == c.id).count()
+
+        results.append(
+            TrainerCourseItem(
+                id=c.id,
+                code=c.code,
+                title=c.title,
+                description=c.description,
+                provider=c.provider,
+                duration_hours=c.duration_hours,
+                status=c.status,
+                target_role=target_role,
+                competencies=comp_codes,
+                enrollments_count=enrollment_count,
+                created_at=c.created_at,
+                updated_at=c.updated_at,
+            )
+        )
+    return results
+
+
+@router.post(
+    "/courses/{course_id}/publish",
+    response_model=CoursePublishResponse,
+    summary="Approve and feed course to learner recommendations",
+    description="Transitions a course to 'published' status, making it live in learner course recommendations.",
+)
+def publish_course(
+    course_id: uuid.UUID,
+    current_user: User = Depends(require_roles("trainer", "admin")),
+    db: Session = Depends(get_db),
+) -> CoursePublishResponse:
+    course = db.query(Course).filter(Course.id == course_id).first()
+    if not course:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Course with ID '{course_id}' was not found.",
+        )
+
+    course.status = "published"
+    db.commit()
+
+    return CoursePublishResponse(
+        id=course.id,
+        title=course.title,
+        status="published",
+        message=f"Course '{course.title}' is now approved and active in the Learner section.",
+    )
+
+
+@router.post(
+    "/courses/{course_id}/unpublish",
+    response_model=CoursePublishResponse,
+    summary="Unpublish course to draft status",
+    description="Transitions a course from 'published' back to 'draft'.",
+)
+def unpublish_course(
+    course_id: uuid.UUID,
+    current_user: User = Depends(require_roles("trainer", "admin")),
+    db: Session = Depends(get_db),
+) -> CoursePublishResponse:
+    course = db.query(Course).filter(Course.id == course_id).first()
+    if not course:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Course with ID '{course_id}' was not found.",
+        )
+
+    course.status = "draft"
+    db.commit()
+
+    return CoursePublishResponse(
+        id=course.id,
+        title=course.title,
+        status="draft",
+        message=f"Course '{course.title}' moved to draft status.",
     )

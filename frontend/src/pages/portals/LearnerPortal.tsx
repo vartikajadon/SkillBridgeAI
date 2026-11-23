@@ -28,6 +28,8 @@ import {
   User as UserIcon,
   XCircle,
 } from 'lucide-react';
+import { ThemeToggle } from '../../components/ThemeToggle';
+import { QuickPortalSwitcher } from '../../components/navigation/QuickPortalSwitcher';
 
 type TabType =
   | 'dashboard'
@@ -133,28 +135,30 @@ export const LearnerPortal: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100">
+    <div className="min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100 transition-colors duration-150">
       {/* Portal Top Navigation */}
-      <header className="border-b border-slate-800 bg-slate-900/60 backdrop-blur sticky top-0 z-50">
+      <header className="border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/60 backdrop-blur sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center space-x-3">
-            <span className="text-lg font-bold text-white">SkillBridge AI</span>
-            <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-950 text-emerald-300 border border-emerald-800 font-medium">
+            <span className="text-lg font-bold text-slate-900 dark:text-white">SkillBridge AI</span>
+            <span className="text-xs px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800 font-medium">
               Civil Service Learner
             </span>
           </div>
 
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-3">
+            <QuickPortalSwitcher />
+            <ThemeToggle />
             <Link
               to="/profile"
-              className="flex items-center space-x-1.5 text-xs text-slate-300 hover:text-white bg-slate-800 px-3 py-1.5 rounded-md border border-slate-700 transition"
+              className="flex items-center space-x-1.5 text-xs text-slate-700 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white bg-slate-100 dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 transition"
             >
-              <UserIcon className="w-3.5 h-3.5 text-indigo-400" />
+              <UserIcon className="w-3.5 h-3.5 text-indigo-500 dark:text-indigo-400" />
               <span>{user?.full_name}</span>
             </Link>
             <button
               onClick={() => logout()}
-              className="p-1.5 text-slate-400 hover:text-rose-400 rounded-md hover:bg-slate-800 transition"
+              className="p-1.5 text-slate-500 hover:text-rose-600 dark:text-slate-400 dark:hover:text-rose-400 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition"
               title="Sign Out"
             >
               <LogOut className="w-4 h-4" />
@@ -164,7 +168,7 @@ export const LearnerPortal: React.FC = () => {
       </header>
 
       {/* Tab Navigation Bar */}
-      <div className="border-b border-slate-800 bg-slate-900/40">
+      <div className="border-b border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/40">
         <div className="max-w-7xl mx-auto px-4 flex items-center space-x-1 sm:space-x-2 overflow-x-auto py-2">
           <button
             onClick={() => {
@@ -175,7 +179,7 @@ export const LearnerPortal: React.FC = () => {
             className={`flex items-center space-x-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition shrink-0 ${
               activeTab === 'dashboard'
                 ? 'bg-indigo-600 text-white shadow'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60'
             }`}
           >
             <LayoutDashboard className="w-4 h-4" />
@@ -191,10 +195,10 @@ export const LearnerPortal: React.FC = () => {
             className={`flex items-center space-x-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition shrink-0 ${
               activeTab === 'learning-assistant'
                 ? 'bg-indigo-600 text-white shadow'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60'
             }`}
           >
-            <Bot className="w-4 h-4 text-emerald-400" />
+            <Bot className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
             <span>AI Assistant (RAG)</span>
           </button>
 
@@ -207,7 +211,7 @@ export const LearnerPortal: React.FC = () => {
             className={`flex items-center space-x-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition shrink-0 ${
               activeTab === 'recommendations'
                 ? 'bg-indigo-600 text-white shadow'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60'
             }`}
           >
             <Sparkles className="w-4 h-4" />
@@ -223,7 +227,7 @@ export const LearnerPortal: React.FC = () => {
             className={`flex items-center space-x-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition shrink-0 ${
               activeTab === 'learning-path'
                 ? 'bg-indigo-600 text-white shadow'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60'
             }`}
           >
             <Compass className="w-4 h-4" />
@@ -239,7 +243,7 @@ export const LearnerPortal: React.FC = () => {
             className={`flex items-center space-x-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition shrink-0 ${
               activeTab === 'assessments'
                 ? 'bg-indigo-600 text-white shadow'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60'
             }`}
           >
             <FileQuestion className="w-4 h-4" />
@@ -255,7 +259,7 @@ export const LearnerPortal: React.FC = () => {
             className={`flex items-center space-x-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition shrink-0 ${
               activeTab === 'gap-analysis'
                 ? 'bg-indigo-600 text-white shadow'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60'
             }`}
           >
             <Target className="w-4 h-4" />
@@ -271,7 +275,7 @@ export const LearnerPortal: React.FC = () => {
             className={`flex items-center space-x-2 px-3.5 py-2 rounded-lg text-xs font-semibold transition shrink-0 ${
               activeTab === 'history'
                 ? 'bg-indigo-600 text-white shadow'
-                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-800/60'
+                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60'
             }`}
           >
             <History className="w-4 h-4" />
@@ -286,15 +290,15 @@ export const LearnerPortal: React.FC = () => {
         {activeTab === 'dashboard' && (
           <div className="space-y-8">
             {/* User Welcome Banner */}
-            <div className="bg-gradient-to-r from-indigo-950/70 via-slate-900 to-slate-900 border border-indigo-900/60 rounded-2xl p-6 sm:p-7 shadow-xl">
+            <div className="bg-gradient-to-r from-indigo-50 via-white to-slate-50 dark:from-indigo-950/70 dark:via-slate-900 dark:to-slate-900 border border-indigo-200 dark:border-indigo-900/60 rounded-2xl p-6 sm:p-7 shadow-xl">
               <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div className="space-y-1">
-                  <div className="flex items-center space-x-2 text-indigo-400 text-xs font-bold uppercase tracking-wider">
+                  <div className="flex items-center space-x-2 text-indigo-600 dark:text-indigo-400 text-xs font-bold uppercase tracking-wider">
                     <Award className="w-4 h-4" />
                     <span>Public Sector Competency Portal</span>
                   </div>
-                  <h1 className="text-2xl font-bold text-white">{user?.full_name}</h1>
-                  <p className="text-xs text-slate-300">
+                  <h1 className="text-2xl font-bold text-slate-900 dark:text-white">{user?.full_name}</h1>
+                  <p className="text-xs text-slate-600 dark:text-slate-300">
                     Department: {user?.department || 'Unassigned'} • Designation:{' '}
                     {user?.designation || 'Learner'} • Employee ID:{' '}
                     {user?.employee_id || 'N/A'}
@@ -311,14 +315,14 @@ export const LearnerPortal: React.FC = () => {
                   </button>
                   <button
                     onClick={() => setActiveTab('learning-path')}
-                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold border border-slate-700 transition flex items-center space-x-1.5"
+                    className="px-4 py-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-700 transition flex items-center space-x-1.5 shadow-sm"
                   >
                     <Compass className="w-3.5 h-3.5" />
                     <span>Learning Roadmap</span>
                   </button>
                   <button
                     onClick={() => setActiveTab('assessments')}
-                    className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-xs font-semibold border border-slate-700 transition flex items-center space-x-1.5"
+                    className="px-4 py-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-700 transition flex items-center space-x-1.5 shadow-sm"
                   >
                     <FileQuestion className="w-3.5 h-3.5" />
                     <span>Take Assessment</span>
@@ -356,66 +360,66 @@ export const LearnerPortal: React.FC = () => {
               <>
                 {/* Metric Summary Cards */}
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-1">
-                    <span className="text-[11px] text-slate-400 block font-medium">Enrolled Courses</span>
-                    <div className="text-2xl font-bold text-white">
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl space-y-1 shadow-sm">
+                    <span className="text-[11px] text-slate-500 dark:text-slate-400 block font-medium">Enrolled Courses</span>
+                    <div className="text-2xl font-bold text-slate-900 dark:text-white">
                       {dashboardData.summary.enrolled_courses_count}
                     </div>
-                    <span className="text-[10px] text-slate-400">
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400">
                       {dashboardData.summary.completed_courses_count} completed •{' '}
                       {dashboardData.summary.average_progress.toFixed(0)}% avg progress
                     </span>
                   </div>
 
-                  <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-1">
-                    <span className="text-[11px] text-indigo-400 block font-medium">Quizzes Completed</span>
-                    <div className="text-2xl font-bold text-indigo-400">
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl space-y-1 shadow-sm">
+                    <span className="text-[11px] text-indigo-600 dark:text-indigo-400 block font-medium">Quizzes Completed</span>
+                    <div className="text-2xl font-bold text-indigo-600 dark:text-indigo-400">
                       {dashboardData.summary.total_quizzes_taken}
                     </div>
-                    <span className="text-[10px] text-slate-400">
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400">
                       Avg Score: {dashboardData.summary.average_quiz_score.toFixed(1)}%
                     </span>
                   </div>
 
-                  <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-1">
-                    <span className="text-[11px] text-emerald-400 block font-medium">Competencies Assessed</span>
-                    <div className="text-2xl font-bold text-emerald-400">
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl space-y-1 shadow-sm">
+                    <span className="text-[11px] text-emerald-600 dark:text-emerald-400 block font-medium">Competencies Assessed</span>
+                    <div className="text-2xl font-bold text-emerald-600 dark:text-emerald-400">
                       {dashboardData.summary.competencies_assessed_count}
                     </div>
-                    <span className="text-[10px] text-slate-400">Active public sector metrics</span>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400">Active public sector metrics</span>
                   </div>
 
-                  <div className="bg-slate-900 border border-slate-800 p-4 rounded-xl space-y-1">
-                    <span className="text-[11px] text-amber-400 block font-medium">Average Gap Score</span>
-                    <div className="text-2xl font-bold text-amber-400">
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-4 rounded-xl space-y-1 shadow-sm">
+                    <span className="text-[11px] text-amber-600 dark:text-amber-400 block font-medium">Average Gap Score</span>
+                    <div className="text-2xl font-bold text-amber-600 dark:text-amber-400">
                       {dashboardData.summary.average_gap_score > 0
                         ? `-${dashboardData.summary.average_gap_score.toFixed(1)}`
                         : '0.0'}
                     </div>
-                    <span className="text-[10px] text-slate-400">Levels below target</span>
+                    <span className="text-[10px] text-slate-500 dark:text-slate-400">Levels below target</span>
                   </div>
                 </div>
 
                 {/* Enrolled Courses & Recent Attempts */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Enrolled Courses */}
-                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-xl">
-                    <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-4 shadow-sm">
+                    <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
                       <div className="flex items-center space-x-2">
-                        <BookOpen className="w-4 h-4 text-indigo-400" />
-                        <h2 className="text-sm font-bold text-white">Enrolled Learning Modules</h2>
+                        <BookOpen className="w-4 h-4 text-indigo-500 dark:text-indigo-400" />
+                        <h2 className="text-sm font-bold text-slate-900 dark:text-white">Enrolled Learning Modules</h2>
                       </div>
-                      <span className="text-xs text-slate-400">
+                      <span className="text-xs text-slate-500 dark:text-slate-400">
                         {dashboardData.enrolled_courses.length} Courses
                       </span>
                     </div>
 
                     {dashboardData.enrolled_courses.length === 0 ? (
                       <div className="text-center py-6 space-y-2">
-                        <p className="text-xs text-slate-400 italic">No active course enrollments.</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 italic">No active course enrollments.</p>
                         <button
                           onClick={() => setActiveTab('recommendations')}
-                          className="text-xs text-indigo-400 hover:text-indigo-300 font-semibold"
+                          className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 font-semibold"
                         >
                           Explore Recommended Courses →
                         </button>
@@ -425,12 +429,12 @@ export const LearnerPortal: React.FC = () => {
                         {dashboardData.enrolled_courses.map((course) => (
                           <div
                             key={course.id}
-                            className="p-3.5 bg-slate-950/60 border border-slate-800 rounded-xl space-y-2 text-xs"
+                            className="p-3.5 bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-xl space-y-2 text-xs"
                           >
                             <div className="flex items-start justify-between gap-2">
                               <div>
-                                <h3 className="font-semibold text-white">{course.title}</h3>
-                                <div className="flex items-center space-x-2 text-[11px] text-slate-400 mt-0.5">
+                                <h3 className="font-semibold text-slate-900 dark:text-white">{course.title}</h3>
+                                <div className="flex items-center space-x-2 text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
                                   <span>{course.provider}</span>
                                   <span>•</span>
                                   <span>{course.duration_hours} hrs</span>
@@ -439,8 +443,8 @@ export const LearnerPortal: React.FC = () => {
                               <span
                                 className={`text-[10px] px-2 py-0.5 rounded font-medium border ${
                                   course.status === 'completed'
-                                    ? 'bg-emerald-950 text-emerald-300 border-emerald-800'
-                                    : 'bg-indigo-950 text-indigo-300 border-indigo-800'
+                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800'
+                                    : 'bg-indigo-50 text-indigo-700 border-indigo-200 dark:bg-indigo-950 dark:text-indigo-300 dark:border-indigo-800'
                                 }`}
                               >
                                 {course.status}
@@ -448,13 +452,13 @@ export const LearnerPortal: React.FC = () => {
                             </div>
 
                             <div className="flex items-center space-x-2 pt-1">
-                              <div className="flex-1 bg-slate-800 rounded-full h-1.5 overflow-hidden">
+                              <div className="flex-1 bg-slate-200 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
                                 <div
-                                  className="bg-indigo-500 h-full rounded-full transition-all"
+                                  className="bg-indigo-600 dark:bg-indigo-500 h-full rounded-full transition-all"
                                   style={{ width: `${course.progress_percentage}%` }}
                                 />
                               </div>
-                              <span className="text-[10px] text-slate-400 shrink-0 font-medium">
+                              <span className="text-[10px] text-slate-500 dark:text-slate-400 shrink-0 font-medium">
                                 {course.progress_percentage}%
                               </span>
                             </div>
@@ -465,22 +469,22 @@ export const LearnerPortal: React.FC = () => {
                   </div>
 
                   {/* Recent Quiz Attempts */}
-                  <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 space-y-4 shadow-xl">
-                    <div className="flex items-center justify-between border-b border-slate-800 pb-3">
+                  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-4 shadow-sm">
+                    <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-3">
                       <div className="flex items-center space-x-2">
-                        <FileQuestion className="w-4 h-4 text-emerald-400" />
-                        <h2 className="text-sm font-bold text-white">Recent Assessment Attempts</h2>
+                        <FileQuestion className="w-4 h-4 text-emerald-500 dark:text-emerald-400" />
+                        <h2 className="text-sm font-bold text-slate-900 dark:text-white">Recent Assessment Attempts</h2>
                       </div>
                       <button
                         onClick={() => setActiveTab('history')}
-                        className="text-xs text-indigo-400 hover:text-indigo-300 font-medium"
+                        className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-500 font-medium"
                       >
                         View all
                       </button>
                     </div>
 
                     {dashboardData.recent_quiz_attempts.length === 0 ? (
-                      <p className="text-xs text-slate-400 italic py-6 text-center">
+                      <p className="text-xs text-slate-500 dark:text-slate-400 italic py-6 text-center">
                         No assessments completed yet. Take a diagnostic test to begin.
                       </p>
                     ) : (
@@ -488,13 +492,13 @@ export const LearnerPortal: React.FC = () => {
                         {dashboardData.recent_quiz_attempts.map((attempt) => (
                           <div
                             key={attempt.id}
-                            className="p-3 bg-slate-950/60 border border-slate-800 rounded-xl flex items-center justify-between gap-3 text-xs"
+                            className="p-3 bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 rounded-xl flex items-center justify-between gap-3 text-xs"
                           >
                             <div>
-                              <span className="font-semibold text-white block">
+                              <span className="font-semibold text-slate-900 dark:text-white block">
                                 {attempt.quiz_title}
                               </span>
-                              <span className="text-[10px] text-slate-400">
+                              <span className="text-[10px] text-slate-500 dark:text-slate-400">
                                 {attempt.completed_at
                                   ? new Date(attempt.completed_at).toLocaleDateString()
                                   : 'Recently completed'}
@@ -503,18 +507,18 @@ export const LearnerPortal: React.FC = () => {
 
                             <div className="flex items-center space-x-3 shrink-0">
                               <div className="text-right">
-                                <span className="font-bold text-white block">
+                                <span className="font-bold text-slate-900 dark:text-white block">
                                   {attempt.score} pts
                                 </span>
-                                <span className="text-[10px] text-slate-400">
+                                <span className="text-[10px] text-slate-500 dark:text-slate-400">
                                   {attempt.percentage.toFixed(0)}%
                                 </span>
                               </div>
                               <span
                                 className={`p-1 rounded-full border ${
                                   attempt.passed
-                                    ? 'bg-emerald-950 text-emerald-300 border-emerald-800'
-                                    : 'bg-rose-950 text-rose-300 border-rose-800'
+                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800'
+                                    : 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950 dark:text-rose-300 dark:border-rose-800'
                                 }`}
                                 title={attempt.passed ? 'Passed' : 'Not Met'}
                               >

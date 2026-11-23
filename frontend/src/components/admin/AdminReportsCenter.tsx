@@ -120,13 +120,13 @@ export const AdminReportsCenter: React.FC<AdminReportsCenterProps> = ({ sessionT
   return (
     <div className="space-y-6">
       {/* Top Banner */}
-      <div className="bg-gradient-to-r from-slate-900 to-indigo-950/80 border border-indigo-900/60 rounded-xl p-5 flex items-center justify-between">
+      <div className="bg-gradient-to-r from-slate-100 to-indigo-50 border border-indigo-200 dark:from-slate-900 dark:to-indigo-950/80 dark:border-indigo-900/60 rounded-xl p-5 flex items-center justify-between shadow-sm">
         <div>
-          <h2 className="text-base font-semibold text-white flex items-center gap-2">
-            <ShieldCheck className="w-5 h-5 text-indigo-400" />
+          <h2 className="text-base font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+            <ShieldCheck className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
             <span>Government Executive Reports & Audit Center</span>
           </h2>
-          <p className="text-xs text-slate-300 mt-1">
+          <p className="text-xs text-slate-600 dark:text-slate-300 mt-1">
             Export verifiable ReportLab PDF management summaries and UTF-8 CSV datasets with immutable audit tracking.
           </p>
         </div>
@@ -137,14 +137,14 @@ export const AdminReportsCenter: React.FC<AdminReportsCenterProps> = ({ sessionT
         <div
           className={`p-4 rounded-xl border text-xs flex items-center gap-2 ${
             statusMsg.type === 'success'
-              ? 'bg-emerald-950/60 border-emerald-800 text-emerald-300'
-              : 'bg-rose-950/60 border-rose-800 text-rose-300'
+              ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300'
+              : 'bg-rose-50 dark:bg-rose-950/60 border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-300'
           }`}
         >
           {statusMsg.type === 'success' ? (
-            <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
           ) : (
-            <AlertCircle className="w-4 h-4 text-rose-400 shrink-0" />
+            <AlertCircle className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
           )}
           <span>{statusMsg.text}</span>
         </div>
@@ -159,42 +159,42 @@ export const AdminReportsCenter: React.FC<AdminReportsCenterProps> = ({ sessionT
           return (
             <div
               key={card.id}
-              className="bg-slate-900 border border-slate-800 rounded-xl p-5 flex flex-col justify-between space-y-4 hover:border-slate-700 transition shadow-sm"
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5 flex flex-col justify-between space-y-4 hover:border-slate-300 dark:hover:border-slate-700 transition shadow-sm"
             >
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-sm font-semibold text-slate-100">{card.title}</h3>
-                  <span className="text-[10px] uppercase font-semibold text-indigo-400 bg-indigo-950/80 px-2 py-0.5 rounded border border-indigo-800">
+                  <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">{card.title}</h3>
+                  <span className="text-[10px] uppercase font-semibold text-indigo-700 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/80 px-2 py-0.5 rounded border border-indigo-200 dark:border-indigo-800">
                     Verified
                   </span>
                 </div>
-                <p className="text-xs text-slate-400 leading-relaxed">{card.description}</p>
+                <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">{card.description}</p>
               </div>
 
               {card.supportsDeptFilter && (
                 <div className="space-y-1">
-                  <label className="text-[11px] text-slate-400">Department Scope (Optional):</label>
+                  <label className="text-[11px] text-slate-600 dark:text-slate-400">Department Scope (Optional):</label>
                   <input
                     type="text"
                     value={deptFilter}
                     onChange={(e) => setDeptFilter(e.target.value)}
                     placeholder="e.g. Ministry of Statistics"
-                    className="w-full bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+                    className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg px-2.5 py-1 text-xs text-slate-900 dark:text-slate-200 placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-indigo-500"
                   />
                 </div>
               )}
 
               {/* Action Bar */}
-              <div className="pt-3 border-t border-slate-800/80 flex items-center justify-between gap-3">
+              <div className="pt-3 border-t border-slate-200 dark:border-slate-800/80 flex items-center justify-between gap-3">
                 {/* Format Toggle */}
-                <div className="inline-flex rounded-lg bg-slate-950 p-0.5 border border-slate-800 text-xs">
+                <div className="inline-flex rounded-lg bg-slate-100 dark:bg-slate-950 p-0.5 border border-slate-200 dark:border-slate-800 text-xs">
                   <button
                     type="button"
                     onClick={() => setReportFormats((prev) => ({ ...prev, [card.id]: 'pdf' }))}
                     className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition ${
                       currentFormat === 'pdf'
-                        ? 'bg-rose-950 text-rose-300 font-semibold shadow'
-                        : 'text-slate-400 hover:text-slate-200'
+                        ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 font-semibold shadow'
+                        : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
                     }`}
                   >
                     <FileText className="w-3 h-3" />
@@ -205,8 +205,8 @@ export const AdminReportsCenter: React.FC<AdminReportsCenterProps> = ({ sessionT
                     onClick={() => setReportFormats((prev) => ({ ...prev, [card.id]: 'csv' }))}
                     className={`flex items-center gap-1 px-2.5 py-1 rounded-md text-[11px] font-medium transition ${
                       currentFormat === 'csv'
-                        ? 'bg-emerald-950 text-emerald-300 font-semibold shadow'
-                        : 'text-slate-400 hover:text-slate-200'
+                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-semibold shadow'
+                        : 'text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-200'
                     }`}
                   >
                     <FileSpreadsheet className="w-3 h-3" />
@@ -218,7 +218,7 @@ export const AdminReportsCenter: React.FC<AdminReportsCenterProps> = ({ sessionT
                 <button
                   disabled={isDownloading}
                   onClick={() => handleDownload(card)}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-800 text-white text-xs font-semibold rounded-lg transition shadow-sm cursor-pointer disabled:cursor-not-allowed"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 disabled:bg-slate-300 dark:disabled:bg-slate-800 text-white text-xs font-semibold rounded-lg transition shadow-sm cursor-pointer disabled:cursor-not-allowed"
                 >
                   {isDownloading ? (
                     <>

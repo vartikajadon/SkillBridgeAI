@@ -138,7 +138,7 @@ export const LearningAssistant: React.FC<LearningAssistantProps> = ({ sessionTok
   };
 
   return (
-    <div className="flex flex-col h-[750px] bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden relative">
+    <div className="flex flex-col h-[750px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl shadow-sm overflow-hidden relative transition-colors">
       {/* Top Header */}
       <div className="px-6 py-4 bg-gradient-to-r from-slate-900 to-indigo-900 text-white flex items-center justify-between border-b border-indigo-800">
         <div className="flex items-center gap-3">
@@ -173,7 +173,7 @@ export const LearningAssistant: React.FC<LearningAssistantProps> = ({ sessionTok
 
       {/* Error Alert */}
       {error && (
-        <div className="bg-red-50 border-b border-red-200 px-4 py-2.5 text-xs text-red-700 flex items-center gap-2">
+        <div className="bg-red-50 dark:bg-rose-950/40 border-b border-red-200 dark:border-rose-800 px-4 py-2.5 text-xs text-red-700 dark:text-rose-300 flex items-center gap-2">
           <Info className="w-4 h-4 text-red-500 shrink-0" />
           <span>{error}</span>
         </div>
@@ -185,7 +185,7 @@ export const LearningAssistant: React.FC<LearningAssistantProps> = ({ sessionTok
       )}
 
       {/* Scrollable Chat History */}
-      <div className="flex-1 overflow-y-auto p-6 bg-slate-50/50">
+      <div className="flex-1 overflow-y-auto p-6 bg-slate-50/80 dark:bg-slate-950/50">
         {messages.map((m) => (
           <ChatMessage
             key={m.id}

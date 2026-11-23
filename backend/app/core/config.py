@@ -62,6 +62,10 @@ class Settings(BaseSettings):
     )
 
     # LLM Provider Placeholders
+    GROQ_API_KEY: str = Field(
+        default="",
+        description="Groq API Key (gsk_...)",
+    )
     OPENAI_API_KEY: str = Field(
         default="sk-placeholder-openai-key",
         description="OpenAI API Key placeholder",
@@ -98,11 +102,11 @@ class Settings(BaseSettings):
     )
     RAG_LLM_PROVIDER: str = Field(
         default="mock",
-        description="RAG response synthesis LLM provider: mock, gemini, openai, anthropic",
+        description="RAG response synthesis LLM provider: mock, groq, openai, gemini, anthropic",
     )
     RAG_LLM_MODEL: str = Field(
         default="mock-rag-v1",
-        description="LLM model identifier for grounded generation",
+        description="LLM model identifier for grounded generation (e.g. llama-3.3-70b-versatile, gpt-4o-mini)",
     )
 
     model_config = SettingsConfigDict(
@@ -148,5 +152,11 @@ def validate_rag_providers_for_environment(s: Settings) -> None:
         if not s.OPENAI_API_KEY or s.OPENAI_API_KEY.startswith("sk-placeholder") or len(s.OPENAI_API_KEY.strip()) < 10:
             raise RuntimeError(
                 "Production configuration error: Valid OPENAI_API_KEY is required in production when RAG_LLM_PROVIDER='openai'."
+            )
+
+    if llm_provider == "groq":
+        if not s.GROQ_API_KEY or s.GROQ_API_KEY.startswith("gsk-placeholder") or len(s.GROQ_API_KEY.strip()) < 10:
+            raise RuntimeError(
+                "Production configuration error: Valid GROQ_API_KEY is required in production when RAG_LLM_PROVIDER='groq'."
             )
 

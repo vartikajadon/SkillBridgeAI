@@ -115,3 +115,45 @@ def test_prompt_injection_sanitization():
     assert "secret" not in result.answer.lower()
     assert "system prompt" not in result.answer.lower()
     assert result.is_grounded is True
+
+
+def test_groq_rag_generator_with_mocked_http():
+    from unittest.mock import MagicMock, patch
+    from app.services.rag_service import GroqRAGGenerator
+
+    generator = GroqRAGGenerator(api_key="gsk_test1234567890", model_name="llama-3.3-70b-versatile")
+    doc_id = uuid.uuid4()
+    chunk_id = uuid.uuid4()
+    chunk = RetrievedChunk(
+        chunk_id=chunk_id,
+        document_id=doc_id,
+        document_title="Civil Service Guidelines",
+        chunk_index=0,
+        chunk_text="Civil servants must observe the highest standards of integrity.",
+        token_count=15,
+        similarity_score=0.92,
+        metadata_json={"page_number": 3},
+    )
+
+    mock_response = MagicMock()
+    mock_response.status_code = 200
+    mock_response.json.return_value = {
+        "choices": [
+            {
+                "message": {
+                    "content": "According to the guidelines [1], civil servants must maintain integrity."
+                }
+            }
+        ]
+    }
+
+    with patch("httpx.Client.post", return_value=mock_response):
+        result = generator.generate_answer(
+            question="What are the standards for civil servants?",
+            chunks=[chunk],
+        )
+
+        assert result.is_grounded is True
+        assert len(result.citations) == 1
+        assert result.citations[0].citation_id == "[1]"
+        assert "maintain integrity" in result.answer

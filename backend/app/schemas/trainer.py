@@ -129,3 +129,34 @@ class QuizDeleteResponse(BaseModel):
     status: str
 
     model_config = ConfigDict(extra="forbid", from_attributes=True)
+
+
+# -----------------------------------------------------------------------------
+# 4. Course Management & Publishing Schemas
+# -----------------------------------------------------------------------------
+
+class TrainerCourseItem(BaseModel):
+    id: uuid.UUID
+    code: str
+    title: str
+    description: Optional[str] = None
+    provider: str
+    duration_hours: int
+    status: str
+    target_role: Optional[str] = None
+    competencies: List[str] = []
+    enrollments_count: int = 0
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(extra="forbid", from_attributes=True)
+
+
+class CoursePublishResponse(BaseModel):
+    id: uuid.UUID
+    title: str
+    status: str
+    message: str
+
+    model_config = ConfigDict(extra="forbid", from_attributes=True)
+

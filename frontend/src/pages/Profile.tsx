@@ -37,26 +37,26 @@ export const Profile: React.FC = () => {
   if (!user) return null;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8 space-y-6 text-slate-100">
-      <div className="border-b border-slate-800 pb-4">
-        <h1 className="text-2xl font-bold tracking-tight text-white flex items-center space-x-2">
-          <User className="w-6 h-6 text-indigo-400" />
+    <div className="max-w-4xl mx-auto px-4 py-8 space-y-6 text-slate-900 dark:text-slate-100 transition-colors">
+      <div className="border-b border-slate-200 dark:border-slate-800 pb-4">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center space-x-2">
+          <User className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
           <span>Civil Servant Profile</span>
         </h1>
-        <p className="text-xs text-slate-400 mt-1">
+        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
           Self-service profile information. Privileged attributes (Role, Employee ID, Job Role) are managed by Administration.
         </p>
       </div>
 
       {successMsg && (
-        <div className="bg-emerald-950/60 border border-emerald-800 p-3 rounded-lg flex items-center space-x-2 text-emerald-300 text-sm">
+        <div className="bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 p-3 rounded-lg flex items-center space-x-2 text-emerald-700 dark:text-emerald-300 text-sm">
           <CheckCircle2 className="w-5 h-5 flex-shrink-0" />
           <span>Profile changes updated successfully.</span>
         </div>
       )}
 
       {errorMsg && (
-        <div className="bg-rose-950/60 border border-rose-800 p-3 rounded-lg flex items-center space-x-2 text-rose-300 text-sm">
+        <div className="bg-rose-50 dark:bg-rose-950/60 border border-rose-200 dark:border-rose-800 p-3 rounded-lg flex items-center space-x-2 text-rose-700 dark:text-rose-300 text-sm">
           <AlertCircle className="w-5 h-5 flex-shrink-0" />
           <span>{errorMsg}</span>
         </div>
@@ -64,48 +64,48 @@ export const Profile: React.FC = () => {
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Read-Only Status Card */}
-        <div className="bg-slate-900 border border-slate-800 p-5 rounded-xl space-y-4">
-          <h3 className="text-sm font-semibold text-slate-300 flex items-center space-x-2">
-            <Shield className="w-4 h-4 text-indigo-400" />
+        <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-5 rounded-xl space-y-4 shadow-sm">
+          <h3 className="text-sm font-semibold text-slate-800 dark:text-slate-300 flex items-center space-x-2">
+            <Shield className="w-4 h-4 text-indigo-600 dark:text-indigo-400" />
             <span>Administrative Badges</span>
           </h3>
 
           <div className="space-y-3 text-xs">
             <div>
               <div className="text-slate-500">System Role</div>
-              <div className="font-semibold text-indigo-300 capitalize">{user.role}</div>
+              <div className="font-semibold text-indigo-600 dark:text-indigo-300 capitalize">{user.role}</div>
             </div>
             <div>
               <div className="text-slate-500">Official Email</div>
-              <div className="font-mono text-slate-300 break-all">{user.email}</div>
+              <div className="font-mono text-slate-700 dark:text-slate-300 break-all">{user.email}</div>
             </div>
             <div>
               <div className="text-slate-500">Employee ID</div>
-              <div className="font-mono text-slate-300">{user.employee_id || 'Not Assigned'}</div>
+              <div className="font-mono text-slate-700 dark:text-slate-300">{user.employee_id || 'Not Assigned'}</div>
             </div>
             <div>
               <div className="text-slate-500">Account Status</div>
-              <div className="text-emerald-400 font-semibold">{user.is_active ? 'Active' : 'Deactivated'}</div>
+              <div className="text-emerald-600 dark:text-emerald-400 font-semibold">{user.is_active ? 'Active' : 'Deactivated'}</div>
             </div>
           </div>
         </div>
 
         {/* Editable Allowlist Form */}
-        <div className="md:col-span-2 bg-slate-900 border border-slate-800 p-6 rounded-xl">
+        <div className="md:col-span-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 p-6 rounded-xl shadow-sm">
           <form onSubmit={handleSave} className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-slate-300">Full Name</label>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Full Name</label>
               <input
                 type="text"
                 required
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="mt-1 block w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-300 flex items-center space-x-1">
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 flex items-center space-x-1">
                 <Building className="w-3.5 h-3.5 text-slate-500 mr-1" />
                 <span>Ministry / Department</span>
               </label>
@@ -114,12 +114,12 @@ export const Profile: React.FC = () => {
                 value={department}
                 onChange={(e) => setDepartment(e.target.value)}
                 placeholder="e.g. Ministry of Finance"
-                className="mt-1 block w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="mt-1 block w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-300 flex items-center space-x-1">
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 flex items-center space-x-1">
                 <Briefcase className="w-3.5 h-3.5 text-slate-500 mr-1" />
                 <span>Designation</span>
               </label>
@@ -128,7 +128,7 @@ export const Profile: React.FC = () => {
                 value={designation}
                 onChange={(e) => setDesignation(e.target.value)}
                 placeholder="e.g. Section Officer"
-                className="mt-1 block w-full px-3 py-2 bg-slate-950 border border-slate-800 rounded-lg text-sm text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                className="mt-1 block w-full px-3 py-2 bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-lg text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500"
               />
             </div>
 

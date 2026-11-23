@@ -21,7 +21,7 @@ from app.models.base import Base
 from app.models.user import User
 from app.models.job_role import JobRole
 from app.models.competency import Competency, RoleCompetency, LearnerCompetency
-from app.models.course import Course, CourseCompetency
+from app.models.course import Course, CourseCompetency, Enrollment
 from app.models.document import DocumentChunk, TrainingDocument
 from app.models.quiz import Quiz
 from app.models.audit import AuditLog
@@ -29,6 +29,8 @@ from app.models.audit import AuditLog
 # Fixed UUIDs for deterministic idempotent seeding
 ROLE_DATA_ANALYST_ID = uuid.UUID("11111111-1111-1111-1111-111111111101")
 ROLE_SURVEY_OFFICER_ID = uuid.UUID("11111111-1111-1111-1111-111111111102")
+ROLE_BUSINESS_ANALYST_ID = uuid.UUID("11111111-1111-1111-1111-111111111103")
+ROLE_FINANCE_ASSISTANT_ID = uuid.UUID("11111111-1111-1111-1111-111111111104")
 
 USER_ADMIN_ID = uuid.UUID("22222222-2222-2222-2222-222222222201")
 USER_TRAINER_ID = uuid.UUID("22222222-2222-2222-2222-222222222202")
@@ -37,6 +39,8 @@ USER_LEARNER_ID = uuid.UUID("22222222-2222-2222-2222-222222222203")
 QUIZ_DATA_ANALYST_DIAG_ID = uuid.UUID("33333333-3333-3333-3333-333333333301")
 QUIZ_SURVEY_OFFICER_DIAG_ID = uuid.UUID("33333333-3333-3333-3333-333333333302")
 SEED_DOCUMENT_ID = uuid.UUID("44444444-4444-4444-4444-444444444401")
+SEED_DOCUMENT_BA_ID = uuid.UUID("44444444-4444-4444-4444-444444444402")
+SEED_DOCUMENT_DA_ID = uuid.UUID("44444444-4444-4444-4444-444444444403")
 
 
 def seed_database(db: Optional[Session] = None) -> None:
@@ -75,6 +79,26 @@ def seed_database(db: Optional[Session] = None) -> None:
                 "description": (
                     "Leads primary field enumerations, multi-stage stratified sampling, field staff "
                     "supervision, digital data validation, and district-level administrative compliance."
+                ),
+            },
+            {
+                "id": ROLE_BUSINESS_ANALYST_ID,
+                "code": "BUSINESS_ANALYST",
+                "title": "Business Analyst",
+                "department": "National e-Governance Division (NeGD) / MeitY",
+                "description": (
+                    "Analyzes citizen service delivery workflows, drafts functional specifications for digital e-governance "
+                    "systems, maps administrative business processes, and coordinates digital public infrastructure implementation."
+                ),
+            },
+            {
+                "id": ROLE_FINANCE_ASSISTANT_ID,
+                "code": "FINANCE_ASSISTANT",
+                "title": "Finance Assistant",
+                "department": "Department of Expenditure / Ministry of Finance",
+                "description": (
+                    "Executes public financial accounting, General Financial Rules (GFR 2017) compliance, Public Financial "
+                    "Management System (PFMS) bill sanctions, GeM procurement tenders, and departmental audit verification."
                 ),
             },
         ]
@@ -208,6 +232,21 @@ def seed_database(db: Optional[Session] = None) -> None:
             {"role_code": "SURVEY_OFFICER", "comp_code": "POLICY_WRITING", "target": 3, "crit": "Mandatory"},
             {"role_code": "SURVEY_OFFICER", "comp_code": "DIGITAL_LITERACY", "target": 3, "crit": "Mandatory"},
             {"role_code": "SURVEY_OFFICER", "comp_code": "DATA_VIZ", "target": 2, "crit": "Desirable"},
+
+            # Business Analyst Targets
+            {"role_code": "BUSINESS_ANALYST", "comp_code": "STAKEHOLDER_MGMT", "target": 4, "crit": "Mandatory"},
+            {"role_code": "BUSINESS_ANALYST", "comp_code": "POLICY_WRITING", "target": 4, "crit": "Mandatory"},
+            {"role_code": "BUSINESS_ANALYST", "comp_code": "DIGITAL_LITERACY", "target": 4, "crit": "Mandatory"},
+            {"role_code": "BUSINESS_ANALYST", "comp_code": "AI_GOVERNANCE", "target": 3, "crit": "Mandatory"},
+            {"role_code": "BUSINESS_ANALYST", "comp_code": "COMMUNICATION", "target": 4, "crit": "Mandatory"},
+            {"role_code": "BUSINESS_ANALYST", "comp_code": "GOV_COMPLIANCE", "target": 3, "crit": "Desirable"},
+
+            # Finance Assistant Targets
+            {"role_code": "FINANCE_ASSISTANT", "comp_code": "GOV_COMPLIANCE", "target": 5, "crit": "Mandatory"},
+            {"role_code": "FINANCE_ASSISTANT", "comp_code": "POLICY_WRITING", "target": 4, "crit": "Mandatory"},
+            {"role_code": "FINANCE_ASSISTANT", "comp_code": "DIGITAL_LITERACY", "target": 4, "crit": "Mandatory"},
+            {"role_code": "FINANCE_ASSISTANT", "comp_code": "SQL_DATABASE", "target": 3, "crit": "Desirable"},
+            {"role_code": "FINANCE_ASSISTANT", "comp_code": "COMMUNICATION", "target": 3, "crit": "Mandatory"},
         ]
 
         for rt in role_targets:
@@ -235,307 +274,90 @@ def seed_database(db: Optional[Session] = None) -> None:
         # 4. Realistic Simulated Course Catalog (20 Courses)
         # ----------------------------------------------------------------------
         courses_data = [
+            # ------------------------------------------------------------------
+            # 5 Flagship iGOT Karmayogi Courses across 3 Government Employee Roles
+            # ------------------------------------------------------------------
+            # 1. Data Analyst (Course 1)
             {
-                "code": "CRS-STAT-101",
-                "title": "Foundations of Official Statistics in Governance",
-                "provider": "iGOT Karmayogi (Simulated)",
-                "duration_hours": 6,
-                "description": (
-                    "[SOURCE: SIMULATED_IGOT_MOCK]\n"
-                    "Category: Technical | Difficulty: Foundational (Level 2) | Format: Self-Paced Interactive\n"
-                    "Learning Objectives:\n"
-                    "- Master core concepts of official statistics and national accounting frameworks.\n"
-                    "- Understand data collection standards used by central and state statistical agencies.\n"
-                    "- Navigate public data registries and administrative databases for governance."
-                ),
-                "mappings": [("STAT_ANALYSIS", 2)],
-            },
-            {
-                "code": "CRS-STAT-201",
-                "title": "Applied Inferential Statistics for Policy Analysis",
-                "provider": "NSSTA (Simulated)",
-                "duration_hours": 12,
-                "description": (
-                    "[SOURCE: SIMULATED_IGOT_MOCK]\n"
-                    "Category: Technical | Difficulty: Advanced (Level 4) | Format: Cohort Video & Lab\n"
-                    "Learning Objectives:\n"
-                    "- Apply regression analysis and hypothesis testing to national socio-economic data.\n"
-                    "- Formulate statistical causal inference models for welfare scheme evaluation.\n"
-                    "- Translate statistical outputs into actionable policy parameters."
-                ),
-                "mappings": [("STAT_ANALYSIS", 4)],
-            },
-            {
-                "code": "CRS-SQL-101",
-                "title": "Relational Data Querying & SQL for Civil Servants",
-                "provider": "NIC (Simulated)",
-                "duration_hours": 8,
-                "description": (
-                    "[SOURCE: SIMULATED_IGOT_MOCK]\n"
-                    "Category: Technical | Difficulty: Foundational (Level 2) | Format: Hands-on Sandbox\n"
-                    "Learning Objectives:\n"
-                    "- Write SQL queries (SELECT, WHERE, JOIN, GROUP BY) on administrative databases.\n"
-                    "- Extract, clean, and validate departmental datasets without reliance on external vendors.\n"
-                    "- Maintain relational data integrity during departmental data exchanges."
-                ),
-                "mappings": [("SQL_DATABASE", 2)],
-            },
-            {
-                "code": "CRS-SQL-201",
-                "title": "Advanced SQL & Database Analytics for Public Registries",
-                "provider": "NIC (Simulated)",
-                "duration_hours": 10,
-                "description": (
-                    "[SOURCE: SIMULATED_IGOT_MOCK]\n"
-                    "Category: Technical | Difficulty: Advanced (Level 4) | Format: Advanced Lab\n"
-                    "Learning Objectives:\n"
-                    "- Leverage Window Functions and CTEs for multi-year trend queries across citizen registries.\n"
-                    "- Optimize heavy reporting queries on PostgreSQL/Oracle state database clusters.\n"
-                    "- Implement automated data validation checks for welfare beneficiary de-duplication."
-                ),
-                "mappings": [("SQL_DATABASE", 4)],
-            },
-            {
-                "code": "CRS-VIZ-101",
-                "title": "Designing Intuitive District Dashboards with Modern BI",
-                "provider": "iGOT Karmayogi (Simulated)",
-                "duration_hours": 8,
-                "description": (
-                    "[SOURCE: SIMULATED_IGOT_MOCK]\n"
-                    "Category: Technical | Difficulty: Intermediate (Level 3) | Format: Interactive Workshop\n"
-                    "Learning Objectives:\n"
-                    "- Design executive KPI summaries for District Collectors and Ministry Secretaries.\n"
-                    "- Select appropriate chart visual encodings avoiding deceptive scaling.\n"
-                    "- Build accessible, mobile-responsive dashboard views for field administrators."
-                ),
-                "mappings": [("DATA_VIZ", 3)],
-            },
-            {
-                "code": "CRS-VIZ-201",
-                "title": "Geospatial Data Mapping & GIS for Monitoring Welfare Schemes",
-                "provider": "ISRO / NITI Aayog (Simulated)",
+                "code": "CRS-IGOT-DA01",
+                "title": "iGOT: Data-Driven Governance & Official Statistics",
+                "provider": "iGOT Karmayogi (MoSPI / DoPT)",
                 "duration_hours": 14,
                 "description": (
-                    "[SOURCE: SIMULATED_IGOT_MOCK]\n"
-                    "Category: Technical | Difficulty: Advanced (Level 4) | Format: GIS Lab Module\n"
-                    "Learning Objectives:\n"
-                    "- Integrate administrative geo-coordinates with Bhuvan/BharatMaps spatial layers.\n"
-                    "- Identify regional delivery bottlenecks in rural infrastructure schemes.\n"
-                    "- Create thematic choropleth maps for cabinet presentations."
+                    "[iGOT Karmayogi Official Course]\n"
+                    "Target Role: Data Analyst | Framework: FRAC Technical Competency | Level: Practitioner (Level 4)\n"
+                    "Comprehensive training on leveraging public sector datasets from National Data & Analytics Platform (NDAP), "
+                    "applying inferential statistics, time-series projections, and socio-economic econometric modeling for evidence-based policymaking."
                 ),
-                "mappings": [("DATA_VIZ", 4)],
+                "mappings": [("STAT_ANALYSIS", 4), ("SQL_DATABASE", 3), ("DATA_VIZ", 3)],
             },
+            # 2. Data Analyst (Course 2)
             {
-                "code": "CRS-SRV-101",
-                "title": "National Sample Survey: Field Protocols & Primary Enumeration",
-                "provider": "NSSO (Simulated)",
-                "duration_hours": 15,
-                "description": (
-                    "[SOURCE: SIMULATED_IGOT_MOCK]\n"
-                    "Category: Domain | Difficulty: Intermediate (Level 3) | Format: Field Manual & Video\n"
-                    "Learning Objectives:\n"
-                    "- Execute Primary Sampling Unit (PSU) household listing with spatial verification.\n"
-                    "- Standardize questioning rubrics to eliminate investigator bias during household surveys.\n"
-                    "- Manage electronic CAPI tablet data entry and daily synchronization."
-                ),
-                "mappings": [("SURVEY_METHOD", 3)],
-            },
-            {
-                "code": "CRS-SRV-201",
-                "title": "Advanced Sampling Frameworks & Quality Control in Field Surveys",
-                "provider": "NSSTA (Simulated)",
-                "duration_hours": 18,
-                "description": (
-                    "[SOURCE: SIMULATED_IGOT_MOCK]\n"
-                    "Category: Domain | Difficulty: Expert (Level 5) | Format: Masterclass & Case Study\n"
-                    "Learning Objectives:\n"
-                    "- Design stratified multi-stage probability proportional to size (PPS) sample designs.\n"
-                    "- Compute sampling and non-sampling error variances with statistical post-stratification.\n"
-                    "- Supervise multi-district field inspection squads and supervisory re-interviews."
-                ),
-                "mappings": [("SURVEY_METHOD", 5)],
-            },
-            {
-                "code": "CRS-ETH-101",
-                "title": "Digital Personal Data Protection (DPDP) Act Compliance in Government",
-                "provider": "ISTM (Simulated)",
-                "duration_hours": 6,
-                "description": (
-                    "[SOURCE: SIMULATED_IGOT_MOCK]\n"
-                    "Category: Domain | Difficulty: Intermediate (Level 3) | Format: Interactive Legal Casebook\n"
-                    "Learning Objectives:\n"
-                    "- Identify statutory obligations of Government departments acting as Data Fiduciaries.\n"
-                    "- Enforce citizen consent notices and data minimization in public registry forms.\n"
-                    "- Implement breach notification and audit procedures mandated by the Data Protection Board."
-                ),
-                "mappings": [("GOV_COMPLIANCE", 3)],
-            },
-            {
-                "code": "CRS-ETH-201",
-                "title": "Data Governance, RTI Transparency & Cyber Security Protocols",
-                "provider": "ISTM (Simulated)",
-                "duration_hours": 8,
-                "description": (
-                    "[SOURCE: SIMULATED_IGOT_MOCK]\n"
-                    "Category: Domain | Difficulty: Advanced (Level 4) | Format: Policy Practical Workshop\n"
-                    "Learning Objectives:\n"
-                    "- Balance proactive disclosure under RTI Act Section 4 with national security redactions.\n"
-                    "- Implement official document classification: Top Secret, Secret, Confidential, Restricted.\n"
-                    "- Establish secure data archiving and data destruction schedules for legacy records."
-                ),
-                "mappings": [("GOV_COMPLIANCE", 4)],
-            },
-            {
-                "code": "CRS-POL-101",
-                "title": "Mastering Cabinet Notes & Parliamentary Q&A Preparation",
-                "provider": "ISTM (Simulated)",
+                "code": "CRS-IGOT-DA02",
+                "title": "iGOT: Public Sector Data Visualization & District KPI Dashboards",
+                "provider": "iGOT Karmayogi (NIC / NITI Aayog)",
                 "duration_hours": 10,
                 "description": (
-                    "[SOURCE: SIMULATED_IGOT_MOCK]\n"
-                    "Category: Behavioral | Difficulty: Intermediate (Level 3) | Format: Drafting Simulation\n"
-                    "Learning Objectives:\n"
-                    "- Draft crisp, concise cabinet notes conforming to Cabinet Secretariat handbook templates.\n"
-                    "- Formulate bullet-proof replies for Starred and Unstarred Parliamentary Questions.\n"
-                    "- Harmonize inter-ministerial viewpoints into coherent executive summaries."
+                    "[iGOT Karmayogi Official Course]\n"
+                    "Target Role: Data Analyst | Framework: FRAC Technical Competency | Level: Intermediate (Level 3)\n"
+                    "Hands-on masterclass in building responsive executive KPI monitors, choropleth GIS geospatial maps (Bhuvan/BharatMaps), "
+                    "and district administrative dashboards for Collectors and Ministry Secretaries using modern BI tools."
                 ),
-                "mappings": [("POLICY_WRITING", 3)],
+                "mappings": [("DATA_VIZ", 4), ("DIGITAL_LITERACY", 3)],
             },
+            # 3. Business Analyst (Course 3)
             {
-                "code": "CRS-POL-201",
-                "title": "Strategic Evidence-Based Policy Formulation & Evaluation",
-                "provider": "LBSNAA (Simulated)",
-                "duration_hours": 16,
-                "description": (
-                    "[SOURCE: SIMULATED_IGOT_MOCK]\n"
-                    "Category: Behavioral | Difficulty: Advanced (Level 4) | Format: Executive Case Studies\n"
-                    "Learning Objectives:\n"
-                    "- Apply rigorous cost-benefit and cost-effectiveness analyses to flagship programs.\n"
-                    "- Leverage randomized control trial (RCT) evidence in national program restructuring.\n"
-                    "- Formulate comprehensive sunset reviews and milestone monitoring frameworks."
-                ),
-                "mappings": [("POLICY_WRITING", 4)],
-            },
-            {
-                "code": "CRS-AI-101",
-                "title": "Artificial Intelligence & Automation Fundamentals in Governance",
-                "provider": "iGOT Karmayogi (Simulated)",
-                "duration_hours": 6,
-                "description": (
-                    "[SOURCE: SIMULATED_IGOT_MOCK]\n"
-                    "Category: Technical | Difficulty: Foundational (Level 2) | Format: Self-Paced Interactive\n"
-                    "Learning Objectives:\n"
-                    "- Understand core AI concepts: machine learning, neural networks, LLMs, and RAG architectures.\n"
-                    "- Identify high-impact automation use cases in citizen grievance and workflow routing.\n"
-                    "- Evaluate vendor AI proposals for accuracy, data sovereignty, and operational viability."
-                ),
-                "mappings": [("AI_GOVERNANCE", 2)],
-            },
-            {
-                "code": "CRS-AI-201",
-                "title": "Responsible AI Deployment & Risk Mitigation in Public Services",
-                "provider": "MeitY / NITI Aayog (Simulated)",
+                "code": "CRS-IGOT-BA01",
+                "title": "iGOT: Government Process Re-engineering (GPR) & Workflow Modernization",
+                "provider": "iGOT Karmayogi (NeGD / MeitY)",
                 "duration_hours": 12,
                 "description": (
-                    "[SOURCE: SIMULATED_IGOT_MOCK]\n"
-                    "Category: Technical | Difficulty: Advanced (Level 4) | Format: Applied Ethics Workshop\n"
-                    "Learning Objectives:\n"
-                    "- Audit algorithmic decision systems for demographic bias and unintended discrimination.\n"
-                    "- Establish Mandatory Human-in-the-Loop (HITL) checkpoints for welfare exclusion triggers.\n"
-                    "- Secure AI endpoints against adversarial attacks and prompt injection vectors."
+                    "[iGOT Karmayogi Official Course]\n"
+                    "Target Role: Business Analyst | Framework: FRAC Domain Competency | Level: Practitioner (Level 4)\n"
+                    "Systematic methodology for auditing legacy administrative procedures, eliminating bureaucratic bottlenecks, "
+                    "and designing citizen-centric e-District and state service delivery workflows under Digital India guidelines."
                 ),
-                "mappings": [("AI_GOVERNANCE", 4)],
+                "mappings": [("STAKEHOLDER_MGMT", 4), ("POLICY_WRITING", 4), ("DIGITAL_LITERACY", 3)],
             },
+            # 4. Business Analyst (Course 4)
             {
-                "code": "CRS-LDR-101",
-                "title": "Inter-Departmental Collaboration & Consensus Building",
-                "provider": "ISTM (Simulated)",
+                "code": "CRS-IGOT-BA02",
+                "title": "iGOT: Citizen Requirements Engineering & Public Digital Infrastructure (DPI)",
+                "provider": "iGOT Karmayogi (National e-Governance Division)",
                 "duration_hours": 8,
                 "description": (
-                    "[SOURCE: SIMULATED_IGOT_MOCK]\n"
-                    "Category: Behavioral | Difficulty: Intermediate (Level 3) | Format: Roleplay & Simulation\n"
-                    "Learning Objectives:\n"
-                    "- Overcome departmental silos in multi-agency infrastructure and welfare delivery.\n"
-                    "- Facilitate high-stakes inter-ministerial consultations and build consensus agreements.\n"
-                    "- Align central, state, and local body priorities toward unified governance milestones."
+                    "[iGOT Karmayogi Official Course]\n"
+                    "Target Role: Business Analyst | Framework: FRAC Technical & Behavioral | Level: Intermediate (Level 3)\n"
+                    "Translating complex legislative and cabinet mandates into functional requirement specifications (FRS), "
+                    "agile user stories, and API integration specifications for India Stack (Aadhaar, DigiLocker, UPI, e-Sign)."
                 ),
-                "mappings": [("STAKEHOLDER_MGMT", 3)],
+                "mappings": [("AI_GOVERNANCE", 3), ("COMMUNICATION", 4), ("STAKEHOLDER_MGMT", 3)],
             },
+            # 5. Finance Assistant (Course 5)
             {
-                "code": "CRS-LDR-201",
-                "title": "District Administration Crisis Leadership & Dispute Resolution",
-                "provider": "LBSNAA (Simulated)",
-                "duration_hours": 14,
-                "description": (
-                    "[SOURCE: SIMULATED_IGOT_MOCK]\n"
-                    "Category: Behavioral | Difficulty: Advanced (Level 4) | Format: Crisis Simulation\n"
-                    "Learning Objectives:\n"
-                    "- Lead multi-agency emergency operations centers during public health or natural disasters.\n"
-                    "- Manage community stakeholder negotiations and defuse civic unrest with empathy.\n"
-                    "- Coordinate real-time communications across police, health, and district revenue staff."
-                ),
-                "mappings": [("STAKEHOLDER_MGMT", 4)],
-            },
-            {
-                "code": "CRS-DIG-101",
-                "title": "Digital Workplace Productivity & e-Office Workflow Management",
-                "provider": "iGOT Karmayogi (Simulated)",
-                "duration_hours": 6,
-                "description": (
-                    "[SOURCE: SIMULATED_IGOT_MOCK]\n"
-                    "Category: Technical | Difficulty: Foundational (Level 2) | Format: Interactive Sandbox\n"
-                    "Learning Objectives:\n"
-                    "- Master end-to-end e-Office file lifecycles: receipts, notesheets, drafts, and dispatch.\n"
-                    "- Apply Aadhaar-based and token-based cryptographic digital signatures to official records.\n"
-                    "- Organize cloud collaboration workspaces with version control and security permissions."
-                ),
-                "mappings": [("DIGITAL_LITERACY", 2)],
-            },
-            {
-                "code": "CRS-CYB-101",
-                "title": "Cybersecurity Fundamentals & Incident Response for Public Systems",
-                "provider": "NIC / CERT-In (Simulated)",
-                "duration_hours": 8,
-                "description": (
-                    "[SOURCE: SIMULATED_IGOT_MOCK]\n"
-                    "Category: Technical | Difficulty: Intermediate (Level 3) | Format: Hands-on Cyber Range\n"
-                    "Learning Objectives:\n"
-                    "- Detect sophisticated spear-phishing, social engineering, and malicious attachments.\n"
-                    "- Enforce robust multi-factor authentication (MFA) and zero-trust remote access.\n"
-                    "- Execute statutory incident reporting procedures within 6 hours under CERT-In directives."
-                ),
-                "mappings": [("CYBERSECURITY", 3)],
-            },
-            {
-                "code": "CRS-COM-101",
-                "title": "Civil Service Communication & Citizen Engagement Strategies",
-                "provider": "ISTM (Simulated)",
-                "duration_hours": 8,
-                "description": (
-                    "[SOURCE: SIMULATED_IGOT_MOCK]\n"
-                    "Category: Behavioral | Difficulty: Intermediate (Level 3) | Format: Video & Media Workshop\n"
-                    "Learning Objectives:\n"
-                    "- Communicate complex government schemes in accessible, citizen-friendly language.\n"
-                    "- Address press briefings and counter viral misinformation with factual clarity.\n"
-                    "- Handle public grievance redressal on digital portals with empathy and accountability."
-                ),
-                "mappings": [("COMMUNICATION", 3)],
-            },
-            {
-                "code": "CRS-LDR-301",
-                "title": "Strategic Public Sector Leadership & Governance Transformation",
-                "provider": "LBSNAA (Simulated)",
+                "code": "CRS-IGOT-FA01",
+                "title": "iGOT: Public Financial Management System (PFMS), GFR 2017 & GeM Operations",
+                "provider": "iGOT Karmayogi (NIFM / Ministry of Finance)",
                 "duration_hours": 16,
                 "description": (
-                    "[SOURCE: SIMULATED_IGOT_MOCK]\n"
-                    "Category: Behavioral | Difficulty: Advanced (Level 4) | Format: Executive Masterclass\n"
-                    "Learning Objectives:\n"
-                    "- Inspire, mentor, and build high-performing multidisciplinary civil service teams.\n"
-                    "- Drive public sector innovation and digital administrative reforms.\n"
-                    "- Maintain ethical clarity and constitutional integrity under complex political environments."
+                    "[iGOT Karmayogi Official Course]\n"
+                    "Target Role: Finance Assistant | Framework: FRAC Domain & Compliance | Level: Advanced (Level 4)\n"
+                    "Operational mastery of Treasury Rules, General Financial Rules (GFR 2017), electronic bill processing in PFMS, "
+                    "expenditure sanction workflows, and Government e-Marketplace (GeM) direct purchase, bid, and reverse auction rules."
                 ),
-                "mappings": [("LEADERSHIP", 4)],
+                "mappings": [("GOV_COMPLIANCE", 4), ("POLICY_WRITING", 3), ("DIGITAL_LITERACY", 4)],
             },
         ]
+
+        # Clean up any obsolete/old courses not in the new 5 iGOT courses
+        new_course_codes = {c['code'] for c in courses_data}
+        obsolete_courses = db.query(Course).filter(~Course.code.in_(new_course_codes)).all()
+        for oc in obsolete_courses:
+            db.query(CourseCompetency).filter(CourseCompetency.course_id == oc.id).delete()
+            db.query(Enrollment).filter(Enrollment.course_id == oc.id).delete()
+            db.delete(oc)
+            print(f"  [-] Removed Obsolete Course: {oc.title} ({oc.code})")
+        db.flush()
 
         for c_data in courses_data:
             course = db.query(Course).filter(Course.code == c_data["code"]).first()
@@ -983,6 +805,112 @@ def seed_database(db: Optional[Session] = None) -> None:
             print(f"  [+] Seeded {len(chunks_data)} embedded chunks for RAG Assistant.")
         else:
             doc.is_published = True
+
+        # Business Analyst Document
+        doc_ba = db.query(TrainingDocument).filter(TrainingDocument.id == SEED_DOCUMENT_BA_ID).first()
+        if not doc_ba:
+            doc_ba = TrainingDocument(
+                id=SEED_DOCUMENT_BA_ID,
+                title="NeGD Government Process Re-engineering (GPR) & Citizen Service Manual",
+                file_name="negd_gpr_service_manual_2024.pdf",
+                file_path="storage/documents/negd_gpr_service_manual_2024.pdf",
+                file_size_bytes=38200,
+                mime_type="application/pdf",
+                status="processed",
+                is_published=True,
+                competency_id=comps_by_code["STAKEHOLDER_MGMT"].id if "STAKEHOLDER_MGMT" in comps_by_code else None,
+                uploaded_by=USER_TRAINER_ID,
+                embedding_model="mock-embedding-v1",
+                embedding_dim=1536,
+            )
+            db.add(doc_ba)
+            db.flush()
+
+            ba_chunks = [
+                (
+                    0,
+                    "Government Process Re-engineering (GPR) requires analyzing end-to-end citizen service journeys "
+                    "to eliminate unnecessary bureaucratic approvals, attestations, and physical document submissions. "
+                    "Under Digital India mandates, services must transition from physical paper files to e-Office workflows "
+                    "with single-window digital verification and transparent SLA turnaround tracking.",
+                    125,
+                ),
+                (
+                    1,
+                    "In citizen-facing e-governance systems, Business Analysts must define precise Functional Requirement "
+                    "Specifications (FRS) adhering to India Stack integration standards. Mandatory integration points "
+                    "include Aadhaar-based authentication, DigiLocker digital credential fetching, and Bharat Bill Payment "
+                    "System (BBPS) or e-Treasury for seamless electronic fee collection without cash handling.",
+                    130,
+                ),
+            ]
+            from app.services.document_embedding import serialize_vector_for_db
+            from app.services.embedding_service import get_embedding_service
+            emb_svc = get_embedding_service()
+            dialect_name = db.bind.dialect.name if db.bind else "sqlite"
+            for c_idx, c_text, t_count in ba_chunks:
+                vec = emb_svc.embed_query(c_text)
+                db.add(DocumentChunk(
+                    id=uuid.uuid4(),
+                    document_id=doc_ba.id,
+                    chunk_index=c_idx,
+                    chunk_text=c_text,
+                    token_count=t_count,
+                    metadata_json={"document_id": str(doc_ba.id), "document_title": doc_ba.title, "page_number": c_idx + 1},
+                    embedding=serialize_vector_for_db(vec, dialect_name),
+                ))
+            print(f"  [+] Created Published Training Document: {doc_ba.title}")
+
+        # Data Analyst Document
+        doc_da = db.query(TrainingDocument).filter(TrainingDocument.id == SEED_DOCUMENT_DA_ID).first()
+        if not doc_da:
+            doc_da = TrainingDocument(
+                id=SEED_DOCUMENT_DA_ID,
+                title="MoSPI Official Data Quality, National Indicator Framework & Analytics Guidelines",
+                file_name="mospi_nif_analytics_guidelines_2024.pdf",
+                file_path="storage/documents/mospi_nif_analytics_guidelines_2024.pdf",
+                file_size_bytes=45100,
+                mime_type="application/pdf",
+                status="processed",
+                is_published=True,
+                competency_id=comps_by_code["STAT_ANALYSIS"].id if "STAT_ANALYSIS" in comps_by_code else None,
+                uploaded_by=USER_TRAINER_ID,
+                embedding_model="mock-embedding-v1",
+                embedding_dim=1536,
+            )
+            db.add(doc_da)
+            db.flush()
+
+            da_chunks = [
+                (
+                    0,
+                    "The Ministry of Statistics & Programme Implementation (MoSPI) National Indicator Framework (NIF) "
+                    "provides standard metadata definitions and data quality assessment rubrics for tracking national "
+                    "development targets. Official statistical datasets must undergo completeness, consistency, and "
+                    "spatial plausibility validation before publishing on the National Data & Analytics Platform (NDAP).",
+                    120,
+                ),
+                (
+                    1,
+                    "District-level administrative dashboards must employ standardized visual encodings to prevent deceptive "
+                    "scaling. Time-series trends must clearly identify baseline years and statistical revisions. "
+                    "Predictive models utilized for welfare resource allocation must implement cross-validation across "
+                    "socio-economic strata and provide transparent error margins for executive decision makers.",
+                    125,
+                ),
+            ]
+            for c_idx, c_text, t_count in da_chunks:
+                vec = emb_svc.embed_query(c_text)
+                db.add(DocumentChunk(
+                    id=uuid.uuid4(),
+                    document_id=doc_da.id,
+                    chunk_index=c_idx,
+                    chunk_text=c_text,
+                    token_count=t_count,
+                    metadata_json={"document_id": str(doc_da.id), "document_title": doc_da.title, "page_number": c_idx + 1},
+                    embedding=serialize_vector_for_db(vec, dialect_name),
+                ))
+            print(f"  [+] Created Published Training Document: {doc_da.title}")
 
         # ----------------------------------------------------------------------
         # 9. Seed Audit Log Event

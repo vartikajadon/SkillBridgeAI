@@ -80,7 +80,51 @@ def test_fallback_generator_synthesizes_valid_mcqs():
         assert "source_chunk_index" in q
 
 
-def test_mocked_llm_generation():
+def test_mocked_groq_llm_generation():
+    chunk = create_mock_chunk("General Financial Rules 2017 mandate procurement transparency.", idx=2)
+
+    mock_response = {
+        "choices": [
+            {
+                "message": {
+                    "content": """{
+                        "questions": [
+                            {
+                                "prompt": "Which rulebook governs public financial procurement transparency?",
+                                "options": ["GFR 2017", "Customs Act", "Motor Vehicles Act", "Factories Act"],
+                                "correct_index": 0,
+                                "difficulty_level": 3,
+                                "points": 20.0,
+                                "explanation": "GFR 2017 mandates procurement transparency."
+                            }
+                        ]
+                    }"""
+                }
+            }
+        ]
+    }
+
+    with patch("httpx.Client.post") as mock_post:
+        mock_resp_obj = MagicMock()
+        mock_resp_obj.status_code = 200
+        mock_resp_obj.json.return_value = mock_response
+        mock_post.return_value = mock_resp_obj
+
+        questions = generate_llm_mcqs(
+            chunks=[chunk],
+            competency_code="FIN_MGMT",
+            question_count=1,
+            total_marks=20,
+            api_key="gsk_real_looking_groq_key_12345",
+            provider="groq",
+        )
+
+        assert len(questions) == 1
+        assert questions[0]["competency_code"] == "FIN_MGMT"
+        assert questions[0]["generator_mode"] == "llm"
+        assert mock_post.called
+        call_url = mock_post.call_args[0][0]
+        assert "groq.com" in call_url
     chunk = create_mock_chunk("Official guidelines for district welfare fund administration.", idx=1)
 
     mock_response = {

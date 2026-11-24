@@ -1,6 +1,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import {
   ChatAnswerResponse,
+  ChatCourseItem,
   ChatMessageItem,
   ChatQueryRequest,
   SourceCitation as SourceCitationType,
@@ -10,6 +11,7 @@ import { ChatInput } from './ChatInput';
 import { SourcePanel } from './SourcePanel';
 import { SuggestedQuestions } from './SuggestedQuestions';
 import {
+  BookOpen,
   Bot,
   Info,
   ShieldCheck,
@@ -21,11 +23,14 @@ interface LearningAssistantProps {
 }
 
 export const LearningAssistant: React.FC<LearningAssistantProps> = ({ sessionToken }) => {
+  const [courses, setCourses] = useState<ChatCourseItem[]>([]);
+  const [selectedCourseId, setSelectedCourseId] = useState<string>('');
+
   const [messages, setMessages] = useState<ChatMessageItem[]>([
     {
       id: 'welcome-1',
       sender: 'assistant',
-      text: 'Namaste! I am your AI Learning Assistant, grounded strictly in authorized public sector training materials, manuals, and circulars.\n\nAsk any question regarding public procurement (e.g. GeM rules & GFR 149), civil service protocols, or government compliance. All answers include verifiable citations to official training documents.',
+      text: 'Namaste! I am your AI Learning Assistant, grounded strictly in authorized public sector training materials, manuals, and circulars.\n\nSelect a course focus above or ask any question regarding official guidelines, civil service protocols, and curriculum topics. All answers include verifiable citations to official training documents.',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       isGrounded: true,
     },
@@ -44,6 +49,104 @@ export const LearningAssistant: React.FC<LearningAssistantProps> = ({ sessionTok
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
+
+  const fetchCourses = async () => {
+    try {
+      const res = await fetch('/api/v1/chat/courses', {
+        headers: { Authorization: `Bearer ${sessionToken}` },
+      });
+      if (res.ok) {
+        const data: ChatCourseItem[] = await res.json();
+        setCourses(data);
+        if (data.length > 0 && !selectedCourseId) {
+          setSelectedCourseId(data[0].id);
+        }
+      }
+    } catch {
+      // Non-blocking
+    }
+  };
+
+  useEffect(() => {
+    fetchCourses();
+  }, [sessionToken]);
+
+  const selectedCourse = courses.find((c) => c.id === selectedCourseId);
+
+  const handleCourseChange = (courseId: string) => {
+    setSelectedCourseId(courseId);
+    const crs = courses.find((c) => c.id === courseId);
+    if (crs) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: `course-switch-${Date.now()}`,
+          sender: 'assistant',
+          text: `Target Course switched to **${crs.title}** (${crs.code}).\n\nI am now grounded in the curriculum and authorized training documents for this course. Feel free to ask any questions about its topics, competencies, or official procedural guidelines!`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          isGrounded: true,
+        },
+      ]);
+    }
+  };
+
+  const getDynamicQuestions = (): string[] => {
+    if (!selectedCourse) {
+      return [
+        'What is the direct purchase limit on the GeM portal?',
+        'How does L-1 price comparison work on GeM between ₹25,000 and ₹5,00,000?',
+        'What are the mandatory requirements for bidding and reverse auctions?',
+        'What is the role of GFR Rule 149 in public procurement?',
+      ];
+    }
+    const code = selectedCourse.code.toUpperCase();
+    if (code.includes('DA01') || code.includes('DATA')) {
+      return [
+        'What are the MoSPI guidelines for data quality in official statistics?',
+        'How does National Indicator Framework (NIF) track development targets?',
+        'What validation checks are required before publishing datasets on NDAP?',
+        'What is the difference between Mean and Median for skewed income distributions?',
+      ];
+    }
+    if (code.includes('DA02') || code.includes('VIZ')) {
+      return [
+        'Why are normalized choropleth maps preferred over raw count maps?',
+        'What visual charts are best for district KPI monitoring across states?',
+        'How should district-level administrative dashboards prevent deceptive scaling?',
+        'What are the key technical competencies for Data Analysts under FRAC?',
+      ];
+    }
+    if (code.includes('BA01') || code.includes('GPR')) {
+      return [
+        'What are the primary principles of Government Process Re-engineering (GPR)?',
+        'How does single-window digital verification eliminate bureaucratic delays?',
+        'What are the mandatory integration points for citizen service workflows?',
+        'How can administrative procedures be audited to remove citizen bottlenecks?',
+      ];
+    }
+    if (code.includes('BA02') || code.includes('DPI')) {
+      return [
+        'How should Business Analysts specify India Stack integration requirements?',
+        'What role does DigiLocker play in digital citizen credential verification?',
+        'What governance safeguards are mandatory for citizen welfare workflows?',
+        'How should functional requirement specifications (FRS) be structured?',
+      ];
+    }
+    if (code.includes('FA01') || code.includes('PFMS') || code.includes('FINANCE')) {
+      return [
+        'What is the direct purchase limit under GFR Rule 149 on GeM?',
+        'What is the timeline for generating CRAC certificate upon consignment arrival?',
+        'What are the penalties if a department delays payments beyond 10 days on GeM?',
+        'How does electronic bill processing work within PFMS for ministry expenditures?',
+      ];
+    }
+    return [
+      `What are the core topics covered in ${selectedCourse.title}?`,
+      `What public sector competencies are taught in ${selectedCourse.code}?`,
+      'What are the procedural guidelines outlined in the authorized manual?',
+      'How does this course align with Mission Karmayogi public administration standards?',
+    ];
+  };
 
   const handleSendMessage = async (questionText: string) => {
     if (!questionText.trim() || loading) return;
@@ -72,6 +175,7 @@ export const LearningAssistant: React.FC<LearningAssistantProps> = ({ sessionTok
     try {
       const payload: ChatQueryRequest = {
         question: questionText,
+        course_id: selectedCourseId || undefined,
       };
 
       const res = await fetch('/api/v1/chat/ask', {
@@ -154,7 +258,7 @@ export const LearningAssistant: React.FC<LearningAssistantProps> = ({ sessionTok
               </span>
             </div>
             <p className="text-xs text-indigo-200 mt-1">
-              Semantic retrieval across verified public sector training manuals
+              Semantic retrieval across verified public sector training manuals & curriculum
             </p>
           </div>
         </div>
@@ -171,6 +275,35 @@ export const LearningAssistant: React.FC<LearningAssistantProps> = ({ sessionTok
         </div>
       </div>
 
+      {/* Course Scope Selector Bar */}
+      <div className="bg-slate-100 dark:bg-slate-800/90 px-6 py-2.5 border-b border-slate-200 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div className="flex items-center space-x-2">
+          <BookOpen className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
+          <span className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+            Target Course Focus:
+          </span>
+          {selectedCourse && (
+            <span className="text-[10px] font-mono px-2 py-0.5 rounded bg-indigo-50 dark:bg-indigo-950/70 text-indigo-700 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 font-semibold">
+              {selectedCourse.code}
+            </span>
+          )}
+        </div>
+        <div className="flex items-center space-x-2">
+          <select
+            value={selectedCourseId}
+            onChange={(e) => handleCourseChange(e.target.value)}
+            className="w-full sm:w-auto bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500 shadow-sm"
+          >
+            <option value="">-- All Published Public Sector Guidelines --</option>
+            {courses.map((c) => (
+              <option key={c.id} value={c.id}>
+                [{c.code}] {c.title}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
       {/* Error Alert */}
       {error && (
         <div className="bg-red-50 dark:bg-rose-950/40 border-b border-red-200 dark:border-rose-800 px-4 py-2.5 text-xs text-red-700 dark:text-rose-300 flex items-center gap-2">
@@ -181,7 +314,11 @@ export const LearningAssistant: React.FC<LearningAssistantProps> = ({ sessionTok
 
       {/* Suggested Inquiries (Starter) */}
       {messages.length <= 2 && (
-        <SuggestedQuestions onSelect={handleSendMessage} disabled={loading} />
+        <SuggestedQuestions
+          onSelect={handleSendMessage}
+          disabled={loading}
+          questions={getDynamicQuestions()}
+        />
       )}
 
       {/* Scrollable Chat History */}

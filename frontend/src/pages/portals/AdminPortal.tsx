@@ -2,13 +2,11 @@ import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { AdminOverviewCharts } from '../../components/admin/AdminOverviewCharts';
 import { AdminUserDirectory } from '../../components/admin/AdminUserDirectory';
-import { AdminCatalogueViewer } from '../../components/admin/AdminCatalogueViewer';
-import { AdminReportsCenter } from '../../components/admin/AdminReportsCenter';
+import { AdminCertificationsCenter } from '../../components/admin/AdminCertificationsCenter';
 import {
+  Award,
   BarChart3,
   Users,
-  BookOpen,
-  FileText,
   ShieldAlert,
   LogOut,
   RefreshCw,
@@ -16,8 +14,7 @@ import {
   UserCheck
 } from 'lucide-react';
 import { ThemeToggle } from '../../components/ThemeToggle';
-import { QuickPortalSwitcher } from '../../components/navigation/QuickPortalSwitcher';
-type AdminTab = 'overview' | 'users' | 'catalogue' | 'reports' | 'audit';
+type AdminTab = 'overview' | 'users' | 'certifications' | 'audit';
 
 interface AuditLog {
   id: string;
@@ -91,7 +88,6 @@ export const AdminPortal: React.FC = () => {
         </div>
 
         <div className="flex items-center space-x-4">
-          <QuickPortalSwitcher />
           <ThemeToggle />
           <div className="text-right hidden sm:block">
             <p className="text-sm font-medium text-slate-800 dark:text-slate-200">{user?.full_name || 'System Administrator'}</p>
@@ -133,25 +129,14 @@ export const AdminPortal: React.FC = () => {
           </button>
 
           <button
-            onClick={() => handleTabChange('catalogue')}
-            className={`flex items-center space-x-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'catalogue'
+            onClick={() => handleTabChange('certifications')}
+            className={`flex items-center space-x-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'certifications'
               ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
               : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60'
               }`}
           >
-            <BookOpen className="w-4 h-4" />
-            <span>Catalogue Inspector</span>
-          </button>
-
-          <button
-            onClick={() => handleTabChange('reports')}
-            className={`flex items-center space-x-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-all ${activeTab === 'reports'
-              ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30'
-              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-slate-200 dark:hover:bg-slate-800/60'
-              }`}
-          >
-            <FileText className="w-4 h-4" />
-            <span>Reports & Exports</span>
+            <Award className="w-4 h-4" />
+            <span>Course Certifications</span>
           </button>
 
           <button
@@ -171,8 +156,7 @@ export const AdminPortal: React.FC = () => {
       <main className="flex-1 p-6 max-w-7xl w-full mx-auto">
         {activeTab === 'overview' && <AdminOverviewCharts sessionToken={token} />}
         {activeTab === 'users' && <AdminUserDirectory sessionToken={token} />}
-        {activeTab === 'catalogue' && <AdminCatalogueViewer />}
-        {activeTab === 'reports' && <AdminReportsCenter sessionToken={token} />}
+        {activeTab === 'certifications' && <AdminCertificationsCenter sessionToken={token} />}
         {activeTab === 'audit' && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">

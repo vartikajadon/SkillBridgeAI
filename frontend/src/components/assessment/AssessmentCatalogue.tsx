@@ -65,9 +65,9 @@ export const AssessmentCatalogue: React.FC<Props> = ({ sessionToken, onSelectAss
     return (
       <div className="p-12 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-3 shadow-sm">
         <HelpCircle className="w-10 h-10 text-slate-400 dark:text-slate-500 mx-auto" />
-        <h3 className="text-base font-semibold text-slate-800 dark:text-slate-200">No Assessments Available</h3>
+        <h3 className="text-base font-semibold text-slate-800 dark:text-slate-200">No Course Assessments Active</h3>
         <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
-          There are currently no diagnostic assessments assigned to your job role. Please check back later or contact your training administrator.
+          Assessments and quizzes are available only for courses you are currently pursuing. Enroll in a course from your Learning Path or Course Catalog to unlock its evaluations.
         </p>
       </div>
     );
@@ -97,7 +97,14 @@ export const AssessmentCatalogue: React.FC<Props> = ({ sessionToken, onSelectAss
             >
               <div className="space-y-3">
                 <div className="flex items-start justify-between gap-3">
-                  <h3 className="font-semibold text-base text-slate-900 dark:text-white">{quiz.title}</h3>
+                  <div>
+                    {quiz.course_title && (
+                      <span className="inline-block text-[11px] font-semibold text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-950/60 border border-indigo-200 dark:border-indigo-800/80 px-2 py-0.5 rounded mb-1">
+                        Pursuing Course: {quiz.course_code ? `${quiz.course_code} - ` : ''}{quiz.course_title}
+                      </span>
+                    )}
+                    <h3 className="font-semibold text-base text-slate-900 dark:text-white">{quiz.title}</h3>
+                  </div>
                   {hasAttempted && (
                     <span
                       className={`text-[11px] px-2 py-0.5 rounded-full font-medium border flex items-center space-x-1 shrink-0 ${

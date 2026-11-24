@@ -1,8 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import {
+  CourseRecommendationItem,
   CourseRecommendationsResponse,
   EnrollmentCreateResponse,
 } from '../../types/recommendation';
+import { CourseDetailModal } from './CourseDetailModal';
 import { RecommendationCard } from './RecommendationCard';
 import { RecommendationExplanation } from './RecommendationExplanation';
 import {
@@ -31,6 +33,7 @@ export const RecommendationList: React.FC<Props> = ({
   const [filter, setFilter] = useState<'all' | 'high' | 'unenrolled' | 'enrolled'>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [showExplanation, setShowExplanation] = useState<boolean>(false);
+  const [selectedCourseForDetails, setSelectedCourseForDetails] = useState<CourseRecommendationItem | null>(null);
 
   // In-flight enrollment tracking
   const [enrollingCourseId, setEnrollingCourseId] = useState<string | null>(null);
@@ -191,11 +194,10 @@ export const RecommendationList: React.FC<Props> = ({
       {/* Toast Notification */}
       {notification && (
         <div
-          className={`p-4 rounded-xl text-xs flex items-center justify-between border ${
-            notification.type === 'success'
-              ? 'bg-emerald-950/60 border-emerald-800 text-emerald-200'
-              : 'bg-rose-950/60 border-rose-800 text-rose-200'
-          }`}
+          className={`p-4 rounded-xl text-xs flex items-center justify-between border ${notification.type === 'success'
+            ? 'bg-emerald-950/60 border-emerald-800 text-emerald-200'
+            : 'bg-rose-950/60 border-rose-800 text-rose-200'
+            }`}
         >
           <span>{notification.message}</span>
           <button
@@ -225,41 +227,37 @@ export const RecommendationList: React.FC<Props> = ({
         <div className="flex items-center space-x-1.5 overflow-x-auto text-xs">
           <button
             onClick={() => setFilter('all')}
-            className={`px-3 py-1.5 rounded-lg font-medium transition ${
-              filter === 'all'
-                ? 'bg-indigo-600 text-white'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800'
-            }`}
+            className={`px-3 py-1.5 rounded-lg font-medium transition ${filter === 'all'
+              ? 'bg-indigo-600 text-white'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800'
+              }`}
           >
             All ({data.recommendations.length})
           </button>
           <button
             onClick={() => setFilter('high')}
-            className={`px-3 py-1.5 rounded-lg font-medium transition ${
-              filter === 'high'
-                ? 'bg-indigo-600 text-white'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800'
-            }`}
+            className={`px-3 py-1.5 rounded-lg font-medium transition ${filter === 'high'
+              ? 'bg-indigo-600 text-white'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800'
+              }`}
           >
             High Priority
           </button>
           <button
             onClick={() => setFilter('unenrolled')}
-            className={`px-3 py-1.5 rounded-lg font-medium transition ${
-              filter === 'unenrolled'
-                ? 'bg-indigo-600 text-white'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800'
-            }`}
+            className={`px-3 py-1.5 rounded-lg font-medium transition ${filter === 'unenrolled'
+              ? 'bg-indigo-600 text-white'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800'
+              }`}
           >
             Available to Enroll
           </button>
           <button
             onClick={() => setFilter('enrolled')}
-            className={`px-3 py-1.5 rounded-lg font-medium transition ${
-              filter === 'enrolled'
-                ? 'bg-indigo-600 text-white'
-                : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800'
-            }`}
+            className={`px-3 py-1.5 rounded-lg font-medium transition ${filter === 'enrolled'
+              ? 'bg-indigo-600 text-white'
+              : 'text-slate-600 hover:text-slate-900 hover:bg-slate-100 dark:text-slate-400 dark:hover:text-white dark:hover:bg-slate-800'
+              }`}
           >
             Enrolled
           </button>
@@ -284,11 +282,20 @@ export const RecommendationList: React.FC<Props> = ({
               key={rec.course_id}
               recommendation={rec}
               onEnroll={handleEnroll}
+              onViewDetails={(selected) => setSelectedCourseForDetails(selected)}
               isEnrolling={enrollingCourseId === rec.course_id}
             />
           ))}
         </div>
       )}
+
+      {/* Course Detail & Video Modules Modal */}
+      <CourseDetailModal
+        course={selectedCourseForDetails}
+        onClose={() => setSelectedCourseForDetails(null)}
+        onEnroll={handleEnroll}
+        isEnrolling={enrollingCourseId === selectedCourseForDetails?.course_id}
+      />
 
       {/* Explanation Modal */}
       <RecommendationExplanation

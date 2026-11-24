@@ -435,3 +435,103 @@ def test_learner_data_isolation():
     res_a = client.get("/api/v1/recommendations/", headers=headers_a)
     assert res_a.status_code == 200
     assert res_a.json()["learner_id"] == str(USER_LEARNER_ID)
+
+
+def test_domain_specific_course_filtering():
+    # 1. Data Analyst learner (Amit Patel) must ONLY see Data Analyst courses
+    learner_token = create_token(sub=str(USER_LEARNER_ID), email="learner@skillbridge.gov.in")
+    headers = {"Authorization": f"Bearer {learner_token}"}
+
+    res = client.get("/api/v1/recommendations/", headers=headers)
+    assert res.status_code == 200
+    data = res.json()
+    rec_codes = [r["code"] for r in data["recommendations"]]
+    for code in rec_codes:
+        assert "DA" in code, f"Non-Data-Analyst course {code} appeared in Data Analyst recommendations"
+
+    # 2. Business Analyst learner must ONLY see Business Analyst courses
+    with TestingSessionLocal() as db:
+        role_ba = db.query(JobRole).filter(JobRole.code == "BUSINESS_ANALYST").first()
+        assert role_ba is not None
+        ba_learner = User(
+            email="ba.learner@skillbridge.gov.in",
+            full_name="Pooja Sharma",
+            role="learner",
+            job_role_id=role_ba.id,
+            is_active=True,
+        )
+        db.add(ba_learner)
+        db.commit()
+        db.refresh(ba_learner)
+        ba_id = str(ba_learner.id)
+
+    ba_token = create_token(sub=ba_id, email="ba.learner@skillbridge.gov.in")
+    res_ba = client.get("/api/v1/recommendations/", headers={"Authorization": f"Bearer {ba_token}"})
+    assert res_ba.status_code == 200
+    ba_codes = [r["code"] for r in res_ba.json()["recommendations"]]
+    assert len(ba_codes) > 0
+    for code in ba_codes:
+        assert "BA" in code, f"Non-Business-Analyst course {code} appeared in BA recommendations"
+
+    # 3. Finance Assistant learner must ONLY see Finance Assistant courses
+    with TestingSessionLocal() as db:
+        role_fa = db.query(JobRole).filter(JobRole.code == "FINANCE_ASSISTANT").first()
+        assert role_fa is not None
+        fa_learner = User(
+            email="fa.learner@skillbridge.gov.in",
+            full_name="Rajesh Verma",
+            role="learner",
+            job_role_id=role_fa.id,
+            is_active=True,
+        )
+        db.add(fa_learner)
+        db.commit()
+        db.refresh(fa_learner)
+        fa_id = str(fa_learner.id)
+
+    fa_token = create_token(sub=fa_id, email="fa.learner@skillbridge.gov.in")
+    res_fa = client.get("/api/v1/recommendations/", headers={"Authorization": f"Bearer {fa_token}"})
+    assert res_fa.status_code == 200
+    fa_codes = [r["code"] for r in res_fa.json()["recommendations"]]
+    assert len(fa_codes) > 0
+    for code in fa_codes:
+        assert "FA" in code, f"Non-Finance-Assistant course {code} appeared in FA recommendations"
+
+
+def test_courses_contain_at_least_five_video_modules():
+    learner_token = create_token(sub=str(USER_LEARNER_ID), email="learner@skillbridge.gov.in")
+    headers = {"Authorization": f"Bearer {learner_token}"}
+
+    res = client.get("/api/v1/recommendations/", headers=headers)
+    assert res.status_code == 200
+    recs = res.json()["recommendations"]
+    assert len(recs) > 0
+
+    for rec in recs:
+        assert "modules" in rec
+        modules = rec["modules"]
+        assert len(modules) >= 5, f"Course {rec['code']} has less than 5 video modules"
+        for mod in modules:
+            assert "module_number" in mod
+            assert "title" in mod and len(mod["title"]) > 0
+            assert "duration_minutes" in mod and mod["duration_minutes"] > 0
+            assert "description" in mod and len(mod["description"]) > 10
+            assert "content" in mod and mod["content"] is not None and len(mod["content"]) > 100
+
+
+def test_course_modules_endpoint():
+    with TestingSessionLocal() as db:
+        course = db.query(Course).filter(Course.code == "CRS-IGOT-DA01").first()
+        assert course is not None
+        course_id = str(course.id)
+
+    learner_token = create_token(sub=str(USER_LEARNER_ID), email="learner@skillbridge.gov.in")
+    headers = {"Authorization": f"Bearer {learner_token}"}
+
+    res = client.get(f"/api/v1/recommendations/{course_id}/modules", headers=headers)
+    assert res.status_code == 200
+    modules = res.json()
+    assert len(modules) >= 5
+    assert modules[0]["module_number"] == 1
+    assert "NDAP" in modules[0]["title"]
+

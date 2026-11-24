@@ -14,12 +14,14 @@ from app.core.config import settings
 from app.core.security import AuthenticatedIdentity
 from app.db.session import get_db
 from app.models.audit import AuditLog
+from app.models.job_role import JobRole
 from app.models.user import User
 from app.schemas.auth import (
     AdminUserUpdateRequest,
     ProfileCreateRequest,
     ProfileUpdateRequest,
     UserProfileResponse,
+    UserRegisterRequest,
 )
 
 router = APIRouter()
@@ -34,6 +36,78 @@ class MockLoginResponse(BaseModel):
     access_token: str
     token_type: str = "bearer"
     user: UserProfileResponse
+
+
+@router.post(
+    "/register",
+    response_model=MockLoginResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Register a new civil service learner account",
+    description="Registers a new Learner profile and returns session token and user profile.",
+)
+async def register_learner(
+    payload: UserRegisterRequest,
+    db: Session = Depends(get_db),
+):
+    target_email = payload.email.strip().lower()
+
+    # Check email conflict
+    if db.query(User).filter(User.email == target_email).first():
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"An account with email '{target_email}' is already registered in the application.",
+        )
+
+    # Check employee_id conflict
+    if payload.employee_id:
+        if db.query(User).filter(User.employee_id == payload.employee_id).first():
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=f"Employee ID '{payload.employee_id}' is already registered to another user.",
+            )
+
+    # Assign default baseline civil service job role (e.g. Data Analyst / Governance) so new learners receive tailored courses immediately
+    default_role = db.query(JobRole).filter(JobRole.code == "DATA_ANALYST").first()
+    if not default_role:
+        default_role = db.query(JobRole).first()
+
+    new_user = User(
+        id=uuid.uuid4(),
+        email=target_email,
+        full_name=payload.full_name,
+        role="learner",
+        department=payload.department,
+        designation=payload.designation,
+        employee_id=payload.employee_id,
+        job_role_id=default_role.id if default_role else None,
+        is_active=True,
+    )
+
+    try:
+        db.add(new_user)
+        db.commit()
+        db.refresh(new_user)
+    except IntegrityError:
+        db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Registration failed due to a constraint conflict. Please check your details.",
+        )
+
+    jwt_payload = {
+        "sub": str(new_user.id),
+        "email": new_user.email,
+        "aud": settings.SUPABASE_JWT_AUDIENCE,
+        "exp": int(time.time()) + 86400 * 30,
+        "iat": int(time.time()),
+    }
+    token = jwt.encode(jwt_payload, settings.SUPABASE_JWT_SECRET, algorithm="HS256")
+
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "user": new_user,
+    }
 
 
 @router.post(
@@ -223,7 +297,7 @@ async def update_my_profile(
 )
 async def list_users(
     skip: int = Query(0, ge=0),
-    limit: int = Query(50, ge=1, le=100),
+    limit: int = Query(50, ge=1, le=500),
     admin: User = Depends(require_roles("admin")),
     db: Session = Depends(get_db),
 ):

@@ -12,6 +12,16 @@ from pydantic import BaseModel, ConfigDict, Field
 # 1. Document Ingestion Schemas
 # -----------------------------------------------------------------------------
 
+class TrainerCompetencyItem(BaseModel):
+    id: uuid.UUID
+    code: str
+    name: str
+    category: str
+    description: Optional[str] = None
+
+    model_config = ConfigDict(extra="forbid", from_attributes=True)
+
+
 class DocumentUploadResponse(BaseModel):
     id: uuid.UUID
     title: str
@@ -21,6 +31,9 @@ class DocumentUploadResponse(BaseModel):
     status: str
     chunk_count: int
     is_published: bool = False
+    competency_id: Optional[uuid.UUID] = None
+    competency_code: Optional[str] = None
+    competency_name: Optional[str] = None
     embedding_model: Optional[str] = None
     embedding_dim: Optional[int] = None
     created_at: datetime
@@ -37,6 +50,9 @@ class TrainerDocumentItem(BaseModel):
     status: str
     chunk_count: int
     is_published: bool = False
+    competency_id: Optional[uuid.UUID] = None
+    competency_code: Optional[str] = None
+    competency_name: Optional[str] = None
     embedding_model: Optional[str] = None
     embedding_dim: Optional[int] = None
     created_at: datetime

@@ -1,9 +1,18 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { User, Shield, Briefcase, Building, CheckCircle2, AlertCircle, Loader2 } from 'lucide-react';
+import { User, Shield, Briefcase, Building, CheckCircle2, AlertCircle, Loader2, ArrowLeft } from 'lucide-react';
 
 export const Profile: React.FC = () => {
   const { user, updateProfile } = useAuth();
+  const navigate = useNavigate();
+
+  const getPortalRoute = () => {
+    if (!user) return '/login';
+    if (user.role === 'admin') return '/admin';
+    if (user.role === 'trainer') return '/trainer';
+    return '/learner';
+  };
 
   const [fullName, setFullName] = useState(user?.full_name || '');
   const [department, setDepartment] = useState(user?.department || '');
@@ -38,14 +47,23 @@ export const Profile: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-8 space-y-6 text-slate-900 dark:text-slate-100 transition-colors">
-      <div className="border-b border-slate-200 dark:border-slate-800 pb-4">
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center space-x-2">
-          <User className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
-          <span>Civil Servant Profile</span>
-        </h1>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-          Self-service profile information. Privileged attributes (Role, Employee ID, Job Role) are managed by Administration.
-        </p>
+      <div className="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center space-x-2">
+            <User className="w-6 h-6 text-indigo-600 dark:text-indigo-400" />
+            <span>Civil Servant Profile</span>
+          </h1>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+            Self-service profile information. Privileged attributes (Role, Employee ID, Job Role) are managed by Administration.
+          </p>
+        </div>
+        <button
+          onClick={() => navigate(getPortalRoute())}
+          className="inline-flex items-center space-x-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl text-xs font-semibold transition border border-slate-200 dark:border-slate-700 shadow-sm shrink-0"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back to Portal</span>
+        </button>
       </div>
 
       {successMsg && (

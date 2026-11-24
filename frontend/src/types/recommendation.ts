@@ -9,6 +9,17 @@ export interface CompetencyAddressedItem {
   criticality: string;
 }
 
+export interface CourseVideoModuleItem {
+  id: string;
+  module_number: number;
+  title: string;
+  duration_minutes: number;
+  description: string;
+  video_url?: string | null;
+  is_completed?: boolean;
+  content?: string | null;
+}
+
 export interface CourseRecommendationItem {
   course_id: string;
   code: string;
@@ -24,6 +35,7 @@ export interface CourseRecommendationItem {
   is_enrolled: boolean;
   enrollment_status: string | null;
   progress_percentage: number | null;
+  modules?: CourseVideoModuleItem[];
 }
 
 export interface CourseRecommendationsResponse {
@@ -49,6 +61,7 @@ export interface LearningPathStepItem {
   is_enrolled: boolean;
   enrollment_status: string | null;
   progress_percentage: number | null;
+  modules?: CourseVideoModuleItem[];
 }
 
 export interface LearningPathResponse {

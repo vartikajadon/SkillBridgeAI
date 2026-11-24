@@ -24,6 +24,7 @@ from app.schemas.trainer import (
     QuizGenerateRequest,
     QuizPublishResponse,
     QuizUpdateRequest,
+    TrainerCompetencyItem,
     TrainerCourseItem,
     TrainerDocumentItem,
     TrainerQuizDetailResponse,
@@ -41,6 +42,20 @@ router = APIRouter()
 # 1. Document Upload & Ingestion
 # -----------------------------------------------------------------------------
 
+@router.get(
+    "/competencies",
+    response_model=List[TrainerCompetencyItem],
+    summary="List competencies available for training document mapping",
+    description="Returns all accredited competencies in the catalog so trainers can tag learning material.",
+)
+def list_trainer_competencies(
+    current_user: User = Depends(require_roles("trainer", "admin")),
+    db: Session = Depends(get_db),
+) -> List[TrainerCompetencyItem]:
+    comps = db.query(Competency).order_by(Competency.name.asc()).all()
+    return comps
+
+
 @router.post(
     "/documents/upload",
     response_model=DocumentUploadResponse,
@@ -51,6 +66,7 @@ router = APIRouter()
 async def upload_training_document(
     file: UploadFile = File(...),
     title: Optional[str] = Form(None),
+    competency_id: Optional[str] = Form(None),
     current_user: User = Depends(require_roles("trainer", "admin")),
     db: Session = Depends(get_db),
 ) -> DocumentUploadResponse:
@@ -65,6 +81,26 @@ async def upload_training_document(
             title=title or file.filename or "Untitled Document",
             uploader_id=current_user.id,
         )
+
+        # Requirement 3: Associate selected competency / skill if provided
+        comp_obj = None
+        if competency_id and competency_id.strip():
+            cid = competency_id.strip()
+            comp_obj = db.query(Competency).filter(
+                (Competency.code == cid) | (Competency.id == cid)
+            ).first()
+            if not comp_obj:
+                try:
+                    c_uuid = uuid.UUID(cid)
+                    comp_obj = db.query(Competency).filter(Competency.id == c_uuid).first()
+                except ValueError:
+                    pass
+
+            if comp_obj:
+                doc.competency_id = comp_obj.id
+                db.commit()
+                db.refresh(doc)
+
         # Generate initial chunk embeddings
         try:
             embed_document_chunks(db, doc.id)
@@ -86,6 +122,9 @@ async def upload_training_document(
         status=doc.status,
         chunk_count=len(chunks),
         is_published=doc.is_published,
+        competency_id=doc.competency_id,
+        competency_code=comp_obj.code if comp_obj else (doc.competency.code if doc.competency else None),
+        competency_name=comp_obj.name if comp_obj else (doc.competency.name if doc.competency else None),
         embedding_model=doc.embedding_model,
         embedding_dim=doc.embedding_dim,
         created_at=doc.created_at,
@@ -110,6 +149,8 @@ def list_trainer_documents(
     results = []
     for doc in docs:
         chunk_count = db.query(DocumentChunk).filter(DocumentChunk.document_id == doc.id).count()
+        comp_code = doc.competency.code if doc.competency else None
+        comp_name = doc.competency.name if doc.competency else None
         results.append(
             TrainerDocumentItem(
                 id=doc.id,
@@ -120,6 +161,9 @@ def list_trainer_documents(
                 status=doc.status,
                 chunk_count=chunk_count,
                 is_published=doc.is_published,
+                competency_id=doc.competency_id,
+                competency_code=comp_code,
+                competency_name=comp_name,
                 embedding_model=doc.embedding_model,
                 embedding_dim=doc.embedding_dim,
                 created_at=doc.created_at,

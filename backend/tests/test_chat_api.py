@@ -180,6 +180,25 @@ def test_learner_ask_irrelevant_question_returns_refusal():
     assert "cannot find sufficient" in data["answer"].lower()
 
 
+def test_open_world_relatable_conceptual_answering():
+    # User asks a conceptual question related to the course/domain (e.g. "what is statistics?")
+    # even without an exact definition in the specific source manual
+    token = create_token(sub=str(USER_LEARNER_ID), email="learner.patel@skillbridge.gov.in")
+    res = client.post(
+        "/api/v1/chat/ask",
+        json={"question": "What is statistics and how does it help policymaking?"},
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert res.status_code == 200
+    data = res.json()
+
+    assert data["is_grounded"] is True
+    assert data["refusal_reason"] is None
+    assert "statistics" in data["answer"].lower()
+    assert "evidence-based policymaking" in data["answer"].lower() or "governance" in data["answer"].lower()
+
+
+
 def test_filter_by_unpublished_document_returns_404_for_learner():
     token = create_token(sub=str(USER_LEARNER_ID), email="learner.patel@skillbridge.gov.in")
     unpub_doc_id = "55555555-5555-5555-5555-555555555501"
@@ -248,3 +267,35 @@ def test_question_length_validation():
         headers={"Authorization": f"Bearer {token}"},
     )
     assert res.status_code == 422
+
+
+def test_list_chat_courses():
+    token = create_token(sub=str(USER_LEARNER_ID), email="learner.patel@skillbridge.gov.in")
+    res = client.get("/api/v1/chat/courses", headers={"Authorization": f"Bearer {token}"})
+    assert res.status_code == 200
+    courses = res.json()
+    assert len(courses) >= 1
+    codes = [c["code"] for c in courses]
+    assert "CRS-IGOT-DA01" in codes
+
+
+def test_learner_ask_question_with_course_scoping():
+    token = create_token(sub=str(USER_LEARNER_ID), email="learner.patel@skillbridge.gov.in")
+    # Get course ID for DA01
+    res_courses = client.get("/api/v1/chat/courses", headers={"Authorization": f"Bearer {token}"})
+    assert res_courses.status_code == 200
+    da_course = next(c for c in res_courses.json() if c["code"] == "CRS-IGOT-DA01")
+
+    res = client.post(
+        "/api/v1/chat/ask",
+        json={
+            "question": "What is the curriculum and key topics covered in this course?",
+            "course_id": da_course["id"],
+        },
+        headers={"Authorization": f"Bearer {token}"},
+    )
+    assert res.status_code == 200
+    data = res.json()
+    assert data["is_grounded"] is True
+    assert len(data["citations"]) >= 1
+    assert "CRS-IGOT-DA01" in data["citations"][0]["document_title"] or "Data-Driven" in data["answer"]

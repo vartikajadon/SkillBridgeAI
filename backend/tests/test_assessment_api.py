@@ -36,6 +36,7 @@ from app.db.seed import (
 from app.db.session import get_db
 from app.main import app
 from app.models.competency import Competency, LearnerCompetency, RoleCompetency
+from app.models.course import Course, CourseCompetency, Enrollment
 from app.models.job_role import JobRole
 from app.models.quiz import Quiz, QuizAttempt
 from app.models.user import User
@@ -187,6 +188,23 @@ def test_assessment_catalogue_for_survey_officer():
             is_active=True,
         )
         db.add(so_user)
+        # Create a course matching survey officer competencies and enroll so_user
+        so_comp = db.query(Competency).filter(Competency.code == "SURVEY_METHOD").first()
+        so_course = Course(
+            id=uuid.uuid4(),
+            code="CRS-TEST-SO-01",
+            title="Socio-Economic Field Survey Methodologies",
+            provider="NSSO",
+            status="published",
+        )
+        db.add(so_course)
+        db.flush()
+        if so_comp:
+            db.add(CourseCompetency(course_id=so_course.id, competency_id=so_comp.id, target_level_achieved=4))
+        so_quiz = db.query(Quiz).filter(Quiz.id == QUIZ_SURVEY_OFFICER_DIAG_ID).first()
+        if so_quiz:
+            so_quiz.course_id = so_course.id
+        db.add(Enrollment(id=uuid.uuid4(), user_id=so_learner_id, course_id=so_course.id, status="in_progress", progress_percentage=25))
         db.commit()
 
     token = create_token(sub=str(so_learner_id), email="surveyor.singh@gov.in")

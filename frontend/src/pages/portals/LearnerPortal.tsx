@@ -29,7 +29,6 @@ import {
   XCircle,
 } from 'lucide-react';
 import { ThemeToggle } from '../../components/ThemeToggle';
-import { QuickPortalSwitcher } from '../../components/navigation/QuickPortalSwitcher';
 
 type TabType =
   | 'dashboard'
@@ -147,7 +146,6 @@ export const LearnerPortal: React.FC = () => {
           </div>
 
           <div className="flex items-center space-x-3">
-            <QuickPortalSwitcher />
             <ThemeToggle />
             <Link
               to="/profile"
@@ -306,27 +304,6 @@ export const LearnerPortal: React.FC = () => {
                 </div>
 
                 <div className="flex flex-wrap items-center gap-3">
-                  <button
-                    onClick={() => setActiveTab('recommendations')}
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold shadow transition flex items-center space-x-1.5"
-                  >
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>View Recommended Courses</span>
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('learning-path')}
-                    className="px-4 py-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-700 transition flex items-center space-x-1.5 shadow-sm"
-                  >
-                    <Compass className="w-3.5 h-3.5" />
-                    <span>Learning Roadmap</span>
-                  </button>
-                  <button
-                    onClick={() => setActiveTab('assessments')}
-                    className="px-4 py-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-lg text-xs font-semibold border border-slate-200 dark:border-slate-700 transition flex items-center space-x-1.5 shadow-sm"
-                  >
-                    <FileQuestion className="w-3.5 h-3.5" />
-                    <span>Take Assessment</span>
-                  </button>
                   <button
                     onClick={handleDownloadTranscript}
                     disabled={downloadingTranscript}

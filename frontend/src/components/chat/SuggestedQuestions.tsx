@@ -4,6 +4,7 @@ import { HelpCircle, Sparkles } from 'lucide-react';
 interface SuggestedQuestionsProps {
   onSelect: (question: string) => void;
   disabled?: boolean;
+  questions?: string[];
 }
 
 const DEFAULT_QUESTIONS = [
@@ -16,7 +17,9 @@ const DEFAULT_QUESTIONS = [
 export const SuggestedQuestions: React.FC<SuggestedQuestionsProps> = ({
   onSelect,
   disabled = false,
+  questions,
 }) => {
+  const displayQuestions = questions && questions.length > 0 ? questions : DEFAULT_QUESTIONS;
   return (
     <div className="p-4 bg-slate-50 dark:bg-slate-950/80 border-b border-slate-200 dark:border-slate-800">
       <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2.5">
@@ -24,7 +27,7 @@ export const SuggestedQuestions: React.FC<SuggestedQuestionsProps> = ({
         <span>Suggested Training Inquiries</span>
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-        {DEFAULT_QUESTIONS.map((q, idx) => (
+        {displayQuestions.map((q, idx) => (
           <button
             key={idx}
             disabled={disabled}

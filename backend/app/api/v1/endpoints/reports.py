@@ -16,7 +16,7 @@ from app.api.deps import require_roles
 from app.db.session import get_db
 from app.models.audit import AuditLog
 from app.models.competency import Competency, LearnerCompetency, RoleCompetency
-from app.models.course import Course, Enrollment
+from app.models.course import Course, CourseCompetency, Enrollment
 from app.models.document import TrainingDocument
 from app.models.job_role import JobRole
 from app.models.quiz import Quiz, QuizAttempt
@@ -407,4 +407,192 @@ def export_assessment_performance(
         subtitle="Itemized civil service diagnostic attempt evaluation and pass rate ledger",
         requested_by=f"{current_user.full_name} ({current_user.email})",
         col_widths=[140, 85, 85, 45, 45, 45, 55, 40] if format == "pdf" else None,
+    )
+
+
+# -----------------------------------------------------------------------------
+# 7. Course Certification & Certificate Generation (Requirement 4)
+# -----------------------------------------------------------------------------
+
+@router.get(
+    "/enrollments",
+    summary="List all course enrollments for administrative certification",
+    description="Returns all learner enrollments with course details, progress, and certification status.",
+)
+def list_enrollments_for_certification(
+    current_user: User = Depends(require_roles("admin")),
+    db: Session = Depends(get_db),
+):
+    enrollments = (
+        db.query(Enrollment, User, Course)
+        .join(User, Enrollment.user_id == User.id)
+        .join(Course, Enrollment.course_id == Course.id)
+        .order_by(Enrollment.enrolled_at.desc())
+        .all()
+    )
+    results = []
+    for enr, u, c in enrollments:
+        cert_id = f"CERT-{enr.id.hex[:10].upper()}" if enr.status == "completed" else None
+        results.append({
+            "enrollment_id": str(enr.id),
+            "user_id": str(u.id),
+            "learner_name": u.full_name,
+            "learner_email": u.email,
+            "employee_id": u.employee_id,
+            "department": u.department or "Public Administration",
+            "designation": u.designation or "Officer",
+            "course_id": str(c.id),
+            "course_code": c.code,
+            "course_title": c.title,
+            "provider": c.provider,
+            "status": enr.status,
+            "progress_percentage": enr.progress_percentage,
+            "enrolled_at": enr.enrolled_at.isoformat() if enr.enrolled_at else None,
+            "completed_at": enr.completed_at.isoformat() if enr.completed_at else None,
+            "is_certified": enr.status == "completed",
+            "certificate_id": cert_id,
+        })
+    return results
+
+
+@router.post(
+    "/enrollments/{enrollment_id}/certify",
+    summary="Certify learner course completion and generate official certificate",
+    description="Sets enrollment status to completed, awards competencies to learner ledger, and registers certificate.",
+)
+def certify_course_completion(
+    enrollment_id: uuid.UUID,
+    current_user: User = Depends(require_roles("admin")),
+    db: Session = Depends(get_db),
+):
+    enr = db.query(Enrollment).filter(Enrollment.id == enrollment_id).first()
+    if not enr:
+        raise HTTPException(status_code=404, detail="Enrollment record not found")
+
+    user = db.query(User).filter(User.id == enr.user_id).first()
+    course = db.query(Course).filter(Course.id == enr.course_id).first()
+    if not user or not course:
+        raise HTTPException(status_code=404, detail="Associated user or course not found")
+
+    now_utc = datetime.now(timezone.utc)
+    enr.status = "completed"
+    enr.progress_percentage = 100
+    if not enr.completed_at:
+        enr.completed_at = now_utc
+
+    # Elevate learner competencies based on course competencies
+    course_comps = db.query(CourseCompetency).filter(CourseCompetency.course_id == course.id).all()
+    for cc in course_comps:
+        l_comp = db.query(LearnerCompetency).filter(
+            LearnerCompetency.user_id == user.id,
+            LearnerCompetency.competency_id == cc.competency_id,
+        ).first()
+        if l_comp:
+            if l_comp.current_level < cc.target_level_achieved:
+                l_comp.current_level = cc.target_level_achieved
+                l_comp.gap_score = max(0, l_comp.target_level - l_comp.current_level)
+                l_comp.last_assessed_at = now_utc
+        else:
+            db.add(
+                LearnerCompetency(
+                    id=uuid.uuid4(),
+                    user_id=user.id,
+                    competency_id=cc.competency_id,
+                    current_level=cc.target_level_achieved,
+                    target_level=cc.target_level_achieved,
+                    gap_score=0,
+                    last_assessed_at=now_utc,
+                )
+            )
+
+    cert_id = f"CERT-{enr.id.hex[:10].upper()}"
+    audit = AuditLog(
+        actor_id=current_user.id,
+        action="COURSE_COMPLETION_CERTIFIED",
+        entity_type="enrollment",
+        entity_id=str(enr.id),
+        details={
+            "learner_id": str(user.id),
+            "learner_name": user.full_name,
+            "course_id": str(course.id),
+            "course_code": course.code,
+            "course_title": course.title,
+            "certificate_id": cert_id,
+        },
+    )
+    db.add(audit)
+    db.commit()
+
+    return {
+        "success": True,
+        "message": f"Successfully certified {user.full_name} for '{course.title}'",
+        "certificate_id": cert_id,
+        "status": enr.status,
+        "progress_percentage": enr.progress_percentage,
+        "completed_at": enr.completed_at.isoformat(),
+    }
+
+
+@router.get(
+    "/enrollments/{enrollment_id}/certificate",
+    summary="Download verified course completion certificate PDF",
+    description="Generates and streams the official PDF certificate for a completed course enrollment.",
+)
+def download_course_certificate(
+    enrollment_id: uuid.UUID,
+    current_user: User = Depends(require_roles("admin", "learner")),
+    db: Session = Depends(get_db),
+):
+    enr = db.query(Enrollment).filter(Enrollment.id == enrollment_id).first()
+    if not enr:
+        raise HTTPException(status_code=404, detail="Enrollment record not found")
+
+    if current_user.role != "admin" and enr.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Access denied: Cannot access certificate of another learner")
+
+    if enr.status != "completed":
+        raise HTTPException(status_code=400, detail="Course enrollment is not completed yet; cannot issue certificate")
+
+    user = db.query(User).filter(User.id == enr.user_id).first()
+    course = db.query(Course).filter(Course.id == enr.course_id).first()
+    if not user or not course:
+        raise HTTPException(status_code=404, detail="Associated user or course not found")
+
+    svc = get_report_service()
+    cert_id = f"CERT-{enr.id.hex[:10].upper()}"
+    completion_date_str = (
+        enr.completed_at.strftime("%d %B %Y")
+        if enr.completed_at
+        else datetime.now(timezone.utc).strftime("%d %B %Y")
+    )
+
+    pdf_bytes = svc.generate_course_certificate_pdf(
+        learner_name=user.full_name,
+        employee_id=user.employee_id or "GOV-IN",
+        department=user.department or "Public Administration",
+        designation=user.designation or "Officer",
+        course_title=course.title,
+        course_code=course.code,
+        provider=course.provider,
+        completion_date=completion_date_str,
+        certificate_id=cert_id,
+    )
+
+    clean_code = course.code.replace(" ", "_").replace("-", "_")
+    clean_name = user.full_name.replace(" ", "_")
+    filename = f"Certificate_{clean_code}_{clean_name}.pdf"
+
+    log_report_export(
+        db,
+        current_user,
+        "course-certificate",
+        "pdf",
+        1,
+        {"enrollment_id": str(enr.id), "certificate_id": cert_id},
+    )
+
+    return StreamingResponse(
+        io.BytesIO(pdf_bytes),
+        media_type="application/pdf",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )

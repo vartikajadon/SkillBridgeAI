@@ -357,6 +357,12 @@ def test_trainer_publishes_quiz_workflow():
             .filter(Quiz.status == "draft", Quiz.created_by == USER_TRAINER_ID)
             .first()
         )
+        # Ensure learner is pursuing the course associated with this quiz
+        from app.models.course import Course
+        course = db.query(Course).filter(Course.code == "CRS-IGOT-DA01").first()
+        if course:
+            draft_quiz.course_id = course.id
+            db.commit()
         draft_id = str(draft_quiz.id)
 
     # Publish action

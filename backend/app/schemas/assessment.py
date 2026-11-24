@@ -16,6 +16,9 @@ from pydantic import BaseModel, ConfigDict, Field
 class AssessmentCatalogueItem(BaseModel):
     id: uuid.UUID
     title: str
+    course_id: Optional[uuid.UUID] = None
+    course_title: Optional[str] = None
+    course_code: Optional[str] = None
     total_marks: int
     passing_marks: int
     question_count: int
@@ -47,6 +50,8 @@ class SanitizedQuestion(BaseModel):
 class AssessmentDetailResponse(BaseModel):
     id: uuid.UUID
     title: str
+    course_id: Optional[uuid.UUID] = None
+    course_title: Optional[str] = None
     total_marks: int
     passing_marks: int
     question_count: int

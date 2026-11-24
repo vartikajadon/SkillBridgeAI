@@ -27,9 +27,19 @@ export interface SourcePassageResponse {
   metadata: Record<string, unknown>;
 }
 
+export interface ChatCourseItem {
+  id: string;
+  code: string;
+  title: string;
+  provider: string;
+  description?: string | null;
+  competencies?: string[];
+}
+
 export interface ChatQueryRequest {
   question: string;
   conversation_id?: string;
+  course_id?: string;
   competency_id?: string;
   document_id?: string;
   top_k?: number;

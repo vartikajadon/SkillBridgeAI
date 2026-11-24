@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
   Cpu,
@@ -55,15 +55,10 @@ export const Login: React.FC = () => {
 
   const { login } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
 
-  const getTargetRoute = (targetEmail: string) => {
-    const fromPath = (location.state as { from?: { pathname: string } })?.from?.pathname;
-    if (fromPath && fromPath !== '/login' && fromPath !== '/') {
-      return fromPath;
-    }
-    if (targetEmail.includes('admin')) return '/admin';
-    if (targetEmail.includes('trainer')) return '/trainer';
+  const getTargetRoute = (targetEmail: string, userRole?: string) => {
+    if (userRole === 'admin' || targetEmail.includes('admin')) return '/admin';
+    if (userRole === 'trainer' || targetEmail.includes('trainer')) return '/trainer';
     return '/learner';
   };
 

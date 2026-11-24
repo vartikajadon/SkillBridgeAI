@@ -242,24 +242,85 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const signup = async (email: string, password: string, profileData: ProfileCreateData) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-    });
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
+    const isLiveSupabase = supabaseUrl && !supabaseUrl.includes('placeholder');
 
-    if (error) {
-      return { error: new Error(error.message), emailConfirmationRequired: false };
+    if (isLiveSupabase) {
+      try {
+        const { data, error } = await supabase.auth.signUp({
+          email,
+          password,
+        });
+
+        if (error) {
+          return { error: new Error(error.message), emailConfirmationRequired: false };
+        }
+
+        if (data.session) {
+          setSession(data.session);
+          setSupabaseUser(data.session.user);
+          const res = await completeProfile(profileData);
+          return { error: res.error, emailConfirmationRequired: false };
+        }
+
+        return { error: null, emailConfirmationRequired: true };
+      } catch {
+        // Fallback to local registration API below
+      }
     }
 
-    if (data.session) {
-      setSession(data.session);
-      setSupabaseUser(data.session.user);
-      const res = await completeProfile(profileData);
-      return { error: res.error, emailConfirmationRequired: false };
-    }
+    // Direct registration API
+    try {
+      const res = await fetch('/api/v1/auth/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          password,
+          full_name: profileData.full_name,
+          department: profileData.department,
+          designation: profileData.designation,
+          employee_id: profileData.employee_id,
+        }),
+      });
 
-    // Email confirmation required case
-    return { error: null, emailConfirmationRequired: true };
+      if (!res.ok) {
+        const errJson = await res.json().catch(() => null);
+        return {
+          error: new Error(errJson?.detail || `Registration failed (HTTP ${res.status})`),
+          emailConfirmationRequired: false,
+        };
+      }
+
+      const data = await res.json();
+      const mockSession: any = {
+        access_token: data.access_token,
+        token_type: 'bearer',
+        expires_in: 86400 * 30,
+        refresh_token: data.access_token,
+        user: {
+          id: data.user.id,
+          email: data.user.email,
+          aud: 'authenticated',
+          app_metadata: {},
+          user_metadata: {},
+          created_at: new Date().toISOString(),
+        },
+      };
+
+      setSession(mockSession);
+      setUser(data.user);
+      localStorage.setItem('skillbridge_mock_session', JSON.stringify(mockSession));
+      setProfileIncomplete(false);
+      return { error: null, emailConfirmationRequired: false };
+    } catch (err: unknown) {
+      return {
+        error: err instanceof Error ? err : new Error('Network error registering account'),
+        emailConfirmationRequired: false,
+      };
+    }
   };
 
   const updateProfile = async (profileData: ProfileUpdateData) => {
@@ -299,6 +360,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setSupabaseUser(null);
     setUser(null);
     setProfileIncomplete(false);
+    // Hard refresh/navigate to /login cleanly so no stale portal state or error screens linger
+    window.location.href = '/login';
   };
 
   const refreshProfile = async () => {

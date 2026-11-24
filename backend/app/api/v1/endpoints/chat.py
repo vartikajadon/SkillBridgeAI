@@ -10,10 +10,12 @@ from sqlalchemy.orm import Session
 from app.api.deps import get_current_user, require_roles
 from app.core.config import settings
 from app.db.session import get_db
+from app.models.course import Course
 from app.models.document import DocumentChunk, TrainingDocument
 from app.models.user import User
 from app.schemas.chat import (
     ChatAnswerResponse,
+    ChatCourseItem,
     ChatHealthResponse,
     ChatQueryRequest,
     SourceCitation,
@@ -21,9 +23,36 @@ from app.schemas.chat import (
 )
 from app.services.embedding_service import get_embedding_service
 from app.services.rag_service import get_rag_service
-from app.services.retrieval_service import get_retrieval_service
+from app.services.retrieval_service import RetrievedChunk, get_retrieval_service
 
 router = APIRouter()
+
+
+@router.get(
+    "/courses",
+    response_model=List[ChatCourseItem],
+    summary="List available courses for AI learning assistant",
+    description="Returns published courses with metadata so learners can select a course focus for the AI assistant.",
+)
+def list_chat_courses(
+    current_user: User = Depends(require_roles("learner", "trainer", "admin")),
+    db: Session = Depends(get_db),
+) -> List[ChatCourseItem]:
+    courses = db.query(Course).filter(Course.status == "published").order_by(Course.code.asc()).all()
+    results = []
+    for c in courses:
+        comp_names = [cc.competency.name for cc in c.course_competencies if cc.competency]
+        results.append(
+            ChatCourseItem(
+                id=c.id,
+                code=c.code,
+                title=c.title,
+                provider=c.provider,
+                description=c.description,
+                competencies=comp_names,
+            )
+        )
+    return results
 
 
 @router.post(
@@ -50,15 +79,48 @@ async def ask_question(
                 detail=f"Requested document filter '{query_in.document_id}' is not available or unpublished.",
             )
 
+    target_course = None
+    course_competency_ids = []
+    if query_in.course_id:
+        target_course = db.query(Course).filter(Course.id == query_in.course_id).first()
+        if target_course:
+            course_competency_ids = [cc.competency_id for cc in target_course.course_competencies if cc.competency_id]
+
     # 2. Semantic retrieval of authorized chunks
     retrieval_svc = get_retrieval_service()
+    filter_comp_id = query_in.competency_id
+    if not filter_comp_id and course_competency_ids:
+        # Prioritize competency of selected course if not explicitly set
+        filter_comp_id = course_competency_ids[0]
+
     chunks = retrieval_svc.retrieve(
         db=db,
         question=query_in.question,
         top_k=query_in.top_k,
-        competency_id=query_in.competency_id,
+        competency_id=filter_comp_id,
         document_id=query_in.document_id,
     )
+
+    # If course is selected, prepend anchor course syllabus chunk so AI has explicit course context
+    if target_course:
+        comp_names = [cc.competency.name for cc in target_course.course_competencies if cc.competency]
+        curriculum_text = (
+            f"Official Course Curriculum: {target_course.title} (Course Code: {target_course.code}). "
+            f"Provider: {target_course.provider}. "
+            f"Course Overview & Key Topics: {target_course.description} "
+            f"Core Competencies Taught: {', '.join(comp_names) if comp_names else 'General Administration'}."
+        )
+        course_chunk = RetrievedChunk(
+            chunk_id=uuid.uuid5(uuid.NAMESPACE_DNS, f"course-{target_course.id}"),
+            document_id=target_course.id,
+            document_title=f"Curriculum: {target_course.code} - {target_course.title}",
+            chunk_index=0,
+            chunk_text=curriculum_text,
+            token_count=100,
+            similarity_score=0.98,
+            metadata_json={"section": "Official Course Curriculum & Guidelines", "page_number": 1},
+        )
+        chunks = [course_chunk] + [c for c in chunks if c.chunk_text != curriculum_text]
 
     # 3. Grounded answer generation and citation verification
     rag_svc = get_rag_service()

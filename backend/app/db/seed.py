@@ -399,11 +399,12 @@ def seed_database(db: Optional[Session] = None) -> None:
         # ----------------------------------------------------------------------
         # 5. Baseline Diagnostic MCQ Assessments
         # ----------------------------------------------------------------------
+        course_da = db.query(Course).filter(Course.code == "CRS-IGOT-DA01").first()
         diagnostic_quizzes_data = [
             {
                 "id": QUIZ_DATA_ANALYST_DIAG_ID,
                 "title": "Data Analyst Baseline Competency Diagnostic",
-                "course_id": None,
+                "course_id": course_da.id if course_da else None,
                 "competency_id": None,
                 "created_by": USER_TRAINER_ID,
                 "total_marks": 100,
@@ -637,6 +638,7 @@ def seed_database(db: Optional[Session] = None) -> None:
                 quiz.passing_marks = q_data["passing_marks"]
                 quiz.questions = q_data["questions"]
                 quiz.created_by = q_data["created_by"]
+                quiz.course_id = q_data.get("course_id")
                 quiz.status = "published"
 
         # ----------------------------------------------------------------------
@@ -726,6 +728,23 @@ def seed_database(db: Optional[Session] = None) -> None:
                 l_comp.current_level = ls["current"]
                 l_comp.target_level = ls["target"]
                 l_comp.gap_score = gap
+
+        # Active Enrollment in CRS-IGOT-DA01 for Amit Patel
+        if course_da:
+            learner_enrollment = db.query(Enrollment).filter(
+                Enrollment.user_id == USER_LEARNER_ID,
+                Enrollment.course_id == course_da.id,
+            ).first()
+            if not learner_enrollment:
+                learner_enrollment = Enrollment(
+                    id=uuid.uuid4(),
+                    user_id=USER_LEARNER_ID,
+                    course_id=course_da.id,
+                    status="in_progress",
+                    progress_percentage=45,
+                )
+                db.add(learner_enrollment)
+                print(f"  [+] Enrolled Amit Patel into {course_da.title}")
 
         # ----------------------------------------------------------------------
         # 8. Seed Baseline Published Training Document & Chunks for RAG Assistant

@@ -10,7 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 # -----------------------------------------------------------------------------
-# 1. Competency Addressed Schemas
+# 1. Competency Addressed Schemas & Course Video Modules
 # -----------------------------------------------------------------------------
 
 class CompetencyAddressedItem(BaseModel):
@@ -22,6 +22,19 @@ class CompetencyAddressedItem(BaseModel):
     gap_score: int
     target_level_achieved: int
     criticality: str = "Mandatory"
+
+    model_config = ConfigDict(extra="forbid", from_attributes=True)
+
+
+class CourseVideoModuleItem(BaseModel):
+    id: str
+    module_number: int
+    title: str
+    duration_minutes: int
+    description: str
+    video_url: Optional[str] = None
+    is_completed: bool = False
+    content: Optional[str] = None
 
     model_config = ConfigDict(extra="forbid", from_attributes=True)
 
@@ -45,6 +58,7 @@ class CourseRecommendationItem(BaseModel):
     is_enrolled: bool = False
     enrollment_status: Optional[str] = None
     progress_percentage: Optional[int] = None
+    modules: List[CourseVideoModuleItem] = Field(default_factory=list)
 
     model_config = ConfigDict(extra="forbid", from_attributes=True)
 
@@ -78,6 +92,7 @@ class LearningPathStepItem(BaseModel):
     is_enrolled: bool = False
     enrollment_status: Optional[str] = None
     progress_percentage: Optional[int] = None
+    modules: List[CourseVideoModuleItem] = Field(default_factory=list)
 
     model_config = ConfigDict(extra="forbid", from_attributes=True)
 

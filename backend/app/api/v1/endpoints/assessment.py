@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import require_roles
 from app.db.session import get_db
 from app.models.competency import Competency, LearnerCompetency, RoleCompetency
+from app.models.course import Course, CourseCompetency, Enrollment
 from app.models.job_role import JobRole
 from app.models.quiz import Quiz, QuizAttempt
 from app.models.user import User
@@ -51,6 +52,27 @@ def get_assessment_catalogue(
     current_user: User = Depends(require_roles("learner")),
     db: Session = Depends(get_db),
 ) -> List[AssessmentCatalogueItem]:
+    # Requirement 2: in learner's section only show only those assessment/quizzes that the learner is pursuing course of.
+    enrolled_courses = (
+        db.query(Enrollment)
+        .filter(Enrollment.user_id == current_user.id)
+        .all()
+    )
+    enrolled_course_ids = {e.course_id for e in enrolled_courses}
+
+    # If learner has not enrolled in any course, catalogue is strictly empty
+    if not enrolled_course_ids:
+        return []
+
+    # Map enrolled courses and their competency codes
+    enrolled_comp_codes = set()
+    enrolled_course_map = {}
+    for c in db.query(Course).filter(Course.id.in_(enrolled_course_ids)).all():
+        enrolled_course_map[c.id] = c
+        for cc in c.course_competencies:
+            if cc.competency:
+                enrolled_comp_codes.add(cc.competency.code)
+
     quizzes = (
         db.query(Quiz)
         .filter(Quiz.status == "published")
@@ -61,7 +83,6 @@ def get_assessment_catalogue(
 
     # Determine role-relevant competency codes if learner has an assigned job role
     role_comp_codes = set()
-    role_keywords = set()
     if current_user.job_role_id:
         rc_codes = (
             db.query(Competency.code)
@@ -70,13 +91,6 @@ def get_assessment_catalogue(
             .all()
         )
         role_comp_codes = {r[0] for r in rc_codes}
-
-        job_role = db.query(JobRole).filter(JobRole.id == current_user.job_role_id).first()
-        if job_role:
-            role_keywords = {
-                job_role.code.lower().replace("_", " "),
-                job_role.title.lower(),
-            }
 
     # Fetch learner's prior attempts
     user_attempts = (
@@ -107,11 +121,21 @@ def get_assessment_catalogue(
             # Quiz explicitly designates a role: only show if learner has that role
             if not any(r.id == current_user.job_role_id for r in targeted_roles):
                 continue
-        elif current_user.job_role_id and role_comp_codes:
-            # Fall back to competency matching
-            has_matching_comp = any(c in role_comp_codes for c in quiz_comp_codes)
-            if not has_matching_comp:
-                continue
+
+        # Requirement 2: Match quiz to a course the learner is currently pursuing
+        associated_course = None
+        if quiz.course_id and quiz.course_id in enrolled_course_ids:
+            associated_course = enrolled_course_map.get(quiz.course_id)
+        elif any(c in enrolled_comp_codes for c in quiz_comp_codes):
+            for cid, crs in enrolled_course_map.items():
+                crs_comp_codes = {cc.competency.code for cc in crs.course_competencies if cc.competency}
+                if any(c in crs_comp_codes for c in quiz_comp_codes):
+                    associated_course = crs
+                    break
+
+        # If this quiz is not associated with any course the learner is pursuing, exclude it
+        if not associated_course:
+            continue
 
         prior_attempts = attempts_by_quiz.get(quiz.id, [])
         attempts_count = len(prior_attempts)
@@ -124,6 +148,9 @@ def get_assessment_catalogue(
             AssessmentCatalogueItem(
                 id=quiz.id,
                 title=quiz.title,
+                course_id=associated_course.id,
+                course_title=associated_course.title,
+                course_code=associated_course.code,
                 total_marks=quiz.total_marks,
                 passing_marks=quiz.passing_marks,
                 question_count=q_count,
@@ -322,9 +349,17 @@ def get_assessment_details(
         )
 
     q_count = len(sanitized)
+    course_title = None
+    if quiz.course_id:
+        crs = db.query(Course).filter(Course.id == quiz.course_id).first()
+        if crs:
+            course_title = crs.title
+
     return AssessmentDetailResponse(
         id=quiz.id,
         title=quiz.title,
+        course_id=quiz.course_id,
+        course_title=course_title,
         total_marks=quiz.total_marks,
         passing_marks=quiz.passing_marks,
         question_count=q_count,

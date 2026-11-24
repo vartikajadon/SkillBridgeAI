@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 
 class ChatQueryRequest(BaseModel):
-    """Learner chat question request with optional competency and document filters."""
+    """Learner chat question request with optional course, competency, and document filters."""
     question: str = Field(
         ...,
         min_length=3,
@@ -19,6 +19,10 @@ class ChatQueryRequest(BaseModel):
     conversation_id: Optional[str] = Field(
         default=None,
         description="Optional client conversation session reference",
+    )
+    course_id: Optional[uuid.UUID] = Field(
+        default=None,
+        description="Optional filter by specific course UUID",
     )
     competency_id: Optional[uuid.UUID] = Field(
         default=None,
@@ -36,6 +40,17 @@ class ChatQueryRequest(BaseModel):
     )
 
     model_config = ConfigDict(extra="forbid")
+
+
+class ChatCourseItem(BaseModel):
+    id: uuid.UUID
+    code: str
+    title: str
+    provider: str
+    description: Optional[str] = None
+    competencies: List[str] = []
+
+    model_config = ConfigDict(extra="forbid", from_attributes=True)
 
 
 class SourceCitation(BaseModel):

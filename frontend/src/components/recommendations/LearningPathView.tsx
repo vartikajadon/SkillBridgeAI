@@ -10,11 +10,11 @@ import {
   CheckCircle,
   Clock,
   Compass,
+  FileText,
   Layers,
   Loader2,
   RefreshCw,
-  Sparkles,
-  Zap,
+  Video,
 } from 'lucide-react';
 
 interface Props {
@@ -95,7 +95,7 @@ export const LearningPathView: React.FC<Props> = ({
 
       setNotification({
         type: 'success',
-        message: resData.message || 'Successfully enrolled in course step!',
+        message: resData.message || 'Successfully enrolled in course!',
       });
 
       if (onEnrollmentSuccess) {
@@ -115,7 +115,7 @@ export const LearningPathView: React.FC<Props> = ({
     return (
       <div className="flex flex-col items-center justify-center p-16 text-slate-400 space-y-4">
         <RefreshCw className="w-8 h-8 animate-spin text-indigo-400" />
-        <p className="text-sm font-medium">Synthesizing pedagogical learning path roadmap...</p>
+        <p className="text-sm font-medium">Loading learning path...</p>
       </div>
     );
   }
@@ -138,10 +138,10 @@ export const LearningPathView: React.FC<Props> = ({
 
   if (data.steps.length === 0) {
     return (
-      <div className="p-12 text-center bg-slate-900 border border-slate-800 rounded-2xl space-y-3">
-        <Compass className="w-10 h-10 text-slate-500 mx-auto" />
-        <h3 className="text-base font-semibold text-slate-200">No Learning Path Generated</h3>
-        <p className="text-xs text-slate-400 max-w-md mx-auto">
+      <div className="p-12 text-center bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-3">
+        <Compass className="w-10 h-10 text-slate-400 dark:text-slate-500 mx-auto" />
+        <h3 className="text-base font-semibold text-slate-900 dark:text-slate-200">No Learning Path Generated</h3>
+        <p className="text-xs text-slate-500 dark:text-slate-400 max-w-md mx-auto">
           All competency benchmarks for your role are currently met, or no prioritized courses remain.
         </p>
       </div>
@@ -149,32 +149,31 @@ export const LearningPathView: React.FC<Props> = ({
   }
 
   return (
-    <div className="space-y-8">
-      {/* Roadmap Header */}
-      <div className="bg-gradient-to-r from-indigo-950/70 via-slate-900 to-slate-900 border border-indigo-900/60 rounded-2xl p-6 sm:p-7 shadow-xl">
+    <div className="space-y-6">
+      {/* Simple Header */}
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
           <div className="space-y-1">
-            <div className="flex items-center space-x-2 text-indigo-400 text-xs font-bold uppercase tracking-wider">
+            <div className="flex items-center space-x-2 text-indigo-600 dark:text-indigo-400 text-xs font-bold uppercase tracking-wider">
               <Compass className="w-4 h-4" />
-              <span>Sequenced Learning Roadmap</span>
+              <span>Learning Path</span>
             </div>
-            <h1 className="text-2xl font-bold text-white">
-              {data.job_role_title || 'Public Sector'} Career Progression Path
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
+              {data.job_role_title ? `${data.job_role_title} Course Path` : 'Course Learning Path'}
             </h1>
-            <p className="text-xs text-slate-300 max-w-2xl leading-relaxed">
-              Sequenced from foundational skill-building (Level 2) to advanced policy leadership (Levels 4–5),
-              prioritizing statutory mandatory milestones before desirable electives.
+            <p className="text-xs text-slate-600 dark:text-slate-400 max-w-2xl">
+              Complete each course in your pathway to build your competencies step-by-step.
             </p>
           </div>
 
-          <div className="flex items-center space-x-4 bg-slate-950/60 p-3.5 rounded-xl border border-slate-800 shrink-0">
+          <div className="flex items-center space-x-4 bg-slate-50 dark:bg-slate-950 p-3 rounded-xl border border-slate-200 dark:border-slate-800 shrink-0">
             <div>
-              <span className="text-[10px] text-slate-400 block font-medium">Curated Steps</span>
-              <div className="text-xl font-black text-white">{data.total_steps} Modules</div>
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">Courses</span>
+              <div className="text-lg font-bold text-slate-900 dark:text-white">{data.total_steps} Courses</div>
             </div>
-            <div className="border-l border-slate-800 pl-4">
-              <span className="text-[10px] text-slate-400 block font-medium">Est. Commitment</span>
-              <div className="text-xl font-black text-indigo-400">{data.total_estimated_hours} Hours</div>
+            <div className="border-l border-slate-200 dark:border-slate-800 pl-4">
+              <span className="text-[10px] text-slate-500 dark:text-slate-400 block font-medium">Total Duration</span>
+              <div className="text-lg font-bold text-indigo-600 dark:text-indigo-400">{data.total_estimated_hours} Hours</div>
             </div>
           </div>
         </div>
@@ -185,8 +184,8 @@ export const LearningPathView: React.FC<Props> = ({
         <div
           className={`p-4 rounded-xl text-xs flex items-center justify-between border ${
             notification.type === 'success'
-              ? 'bg-emerald-950/60 border-emerald-800 text-emerald-200'
-              : 'bg-rose-950/60 border-rose-800 text-rose-200'
+              ? 'bg-emerald-50 dark:bg-emerald-950/60 border-emerald-300 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200'
+              : 'bg-rose-50 dark:bg-rose-950/60 border-rose-300 dark:border-rose-800 text-rose-800 dark:text-rose-200'
           }`}
         >
           <span>{notification.message}</span>
@@ -199,106 +198,68 @@ export const LearningPathView: React.FC<Props> = ({
         </div>
       )}
 
-      {/* Sequenced Roadmap Timeline */}
-      <div className="relative border-l-2 border-indigo-200 dark:border-indigo-950 ml-4 sm:ml-6 space-y-8 pb-4">
-        {data.steps.map((step) => {
-          const isHigh = step.priority === 'High';
+      {/* Simple Course Path List */}
+      <div className="space-y-6">
+        {data.steps.map((course, index) => {
+          const stepPct = course.progress_percentage || (course.is_enrolled ? (course.enrollment_status === 'completed' ? 100 : 30) : 0);
+          const modules = course.modules || [];
 
           return (
-            <div key={step.step_number} className="relative pl-6 sm:pl-8">
-              {/* Timeline Step Circle Node */}
-              <div
-                className={`absolute -left-[17px] top-1.5 w-8 h-8 rounded-full border-2 flex items-center justify-center font-bold text-xs transition ${
-                  step.is_enrolled
-                    ? 'bg-emerald-100 dark:bg-emerald-950 border-emerald-500 text-emerald-800 dark:text-emerald-300 ring-4 ring-slate-50 dark:ring-slate-950'
-                    : 'bg-indigo-100 dark:bg-indigo-950 border-indigo-500 text-indigo-800 dark:text-indigo-200 ring-4 ring-slate-50 dark:ring-slate-950'
-                }`}
-              >
-                {step.step_number}
-              </div>
-
-              {/* Step Card Content */}
-              <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 sm:p-6 space-y-4 shadow-sm hover:shadow-md transition">
-                <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
-                  <div className="space-y-1">
-                    <div className="flex items-center space-x-2">
-                      <span className="text-[10px] font-mono font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">
-                        Step {step.step_number} • {step.code}
-                      </span>
-                      <span className="text-[10px] px-2 py-0.5 rounded bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800 font-semibold">
-                        Delivers Level {step.target_level_achieved}
-                      </span>
-                    </div>
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white">{step.title}</h3>
-                  </div>
-
-                  <div className="flex items-center space-x-2 shrink-0">
-                    <span
-                      className={`text-[10px] px-2 py-0.5 rounded-full font-bold border flex items-center space-x-1 ${
-                        isHigh
-                          ? 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800'
-                          : 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800'
-                      }`}
-                    >
-                      <Zap className="w-3 h-3" />
-                      <span>{step.priority} Priority</span>
+            <div
+              key={course.course_id}
+              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm hover:shadow transition space-y-5"
+            >
+              {/* Course Header */}
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
+                <div className="space-y-1.5 flex-1">
+                  <div className="flex items-center space-x-2 flex-wrap gap-y-1">
+                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-100 text-indigo-800 dark:bg-indigo-950/80 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                      Course {index + 1}
                     </span>
-                    <span className="text-xs font-semibold text-indigo-600 dark:text-indigo-400">
-                      {step.relevance_score.toFixed(0)} pts
+                    <span className="text-xs font-mono font-medium text-slate-500 dark:text-slate-400">
+                      {course.code}
+                    </span>
+                    <span className="text-xs px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 font-medium">
+                      Level {course.target_level_achieved}
+                    </span>
+                  </div>
+                  <h2 className="text-lg font-bold text-slate-900 dark:text-white">
+                    {course.title}
+                  </h2>
+                  <div className="flex items-center space-x-4 text-xs text-slate-500 dark:text-slate-400 pt-0.5">
+                    <span className="flex items-center space-x-1">
+                      <Layers className="w-3.5 h-3.5 text-indigo-500" />
+                      <span>{course.provider}</span>
+                    </span>
+                    <span className="flex items-center space-x-1">
+                      <Clock className="w-3.5 h-3.5 text-indigo-500" />
+                      <span>{course.duration_hours} Hours</span>
+                    </span>
+                    <span className="flex items-center space-x-1">
+                      <Award className="w-3.5 h-3.5 text-amber-500" />
+                      <span>{course.competencies_addressed.join(', ')}</span>
                     </span>
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs text-slate-700 dark:text-slate-300 py-2 border-y border-slate-200 dark:border-slate-800/80">
-                  <div className="flex items-center space-x-1.5">
-                    <Layers className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
-                    <span className="truncate">{step.provider}</span>
-                  </div>
-                  <div className="flex items-center space-x-1.5">
-                    <Clock className="w-3.5 h-3.5 text-indigo-600 dark:text-indigo-400" />
-                    <span>{step.duration_hours} Training Hours</span>
-                  </div>
-                  <div className="flex items-center space-x-1.5 col-span-2 sm:col-span-1">
-                    <Award className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-                    <span>{step.competencies_addressed.join(', ')}</span>
-                  </div>
-                </div>
-
-                {/* Plain-Language Reason */}
-                <div className="p-3 bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 rounded-xl text-xs space-y-1">
-                  <div className="flex items-center space-x-1.5 text-indigo-600 dark:text-indigo-400 text-[11px] font-semibold">
-                    <Sparkles className="w-3.5 h-3.5" />
-                    <span>Pedagogical Role</span>
-                  </div>
-                  <p className="text-slate-600 dark:text-slate-300 text-[11px] leading-relaxed">
-                    {step.reason}
-                  </p>
-                </div>
-
-                {/* Footer / Enroll action */}
-                <div className="flex items-center justify-between pt-2">
-                  {step.is_enrolled ? (
-                    <span className="text-xs px-2.5 py-1 rounded-full bg-emerald-100 text-emerald-800 border border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800 font-semibold flex items-center space-x-1.5">
-                      <CheckCircle className="w-3.5 h-3.5" />
+                {/* Status & Action */}
+                <div className="flex items-center space-x-3 shrink-0">
+                  {course.is_enrolled ? (
+                    <span className="px-3 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 dark:bg-emerald-950/80 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 text-xs font-semibold flex items-center space-x-1.5">
+                      <CheckCircle className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                       <span>
-                        {step.enrollment_status === 'in_progress'
-                          ? `In Progress (${step.progress_percentage || 0}%)`
-                          : 'Enrolled in Roadmap'}
+                        {stepPct >= 100
+                          ? 'Completed'
+                          : `Enrolled (${stepPct}%)`}
                       </span>
                     </span>
                   ) : (
-                    <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                      Ready to add to your active learning plan
-                    </span>
-                  )}
-
-                  {!step.is_enrolled ? (
                     <button
-                      onClick={() => handleEnroll(step.course_id)}
-                      disabled={enrollingCourseId === step.course_id}
+                      onClick={() => handleEnroll(course.course_id)}
+                      disabled={enrollingCourseId === course.course_id}
                       className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 disabled:bg-indigo-800 text-white rounded-xl text-xs font-semibold shadow transition flex items-center space-x-1.5"
                     >
-                      {enrollingCourseId === step.course_id ? (
+                      {enrollingCourseId === course.course_id ? (
                         <>
                           <Loader2 className="w-3.5 h-3.5 animate-spin" />
                           <span>Enrolling...</span>
@@ -306,19 +267,92 @@ export const LearningPathView: React.FC<Props> = ({
                       ) : (
                         <>
                           <BookOpen className="w-3.5 h-3.5" />
-                          <span>Enroll in Step {step.step_number}</span>
+                          <span>Enroll Course</span>
                         </>
                       )}
                     </button>
-                  ) : (
-                    <button
-                      disabled
-                      className="px-3 py-1.5 bg-slate-100 text-slate-500 dark:bg-slate-800 dark:text-slate-400 rounded-xl text-xs font-medium cursor-default"
-                    >
-                      Step Active
-                    </button>
                   )}
                 </div>
+              </div>
+
+              {/* Course Progress Bar */}
+              <div className="space-y-1.5 bg-slate-50 dark:bg-slate-950 p-3.5 rounded-xl border border-slate-100 dark:border-slate-800/80">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-600 dark:text-slate-400 font-medium">Course Progress</span>
+                  <span className="font-mono font-bold text-indigo-600 dark:text-indigo-400">
+                    {stepPct}% Complete
+                  </span>
+                </div>
+                <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${
+                      stepPct >= 100
+                        ? 'bg-emerald-500'
+                        : 'bg-indigo-600'
+                    }`}
+                    style={{ width: `${Math.max(stepPct > 0 ? 3 : 0, stepPct)}%` }}
+                  />
+                </div>
+              </div>
+
+              {/* Modules in this Course */}
+              <div className="space-y-2.5">
+                <div className="flex items-center justify-between text-xs font-bold text-slate-800 dark:text-slate-200">
+                  <div className="flex items-center space-x-1.5">
+                    <Video className="w-4 h-4 text-indigo-500" />
+                    <span>Modules in this Course ({modules.length})</span>
+                  </div>
+                </div>
+
+                {modules.length > 0 ? (
+                  <div className="divide-y divide-slate-100 dark:divide-slate-800 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden">
+                    {modules.map((mod) => (
+                      <div
+                        key={mod.id || mod.module_number}
+                        className="p-3.5 bg-white dark:bg-slate-900/60 hover:bg-slate-50 dark:hover:bg-slate-800/50 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs transition"
+                      >
+                        <div className="flex items-start sm:items-center space-x-3">
+                          <span className="w-6 h-6 rounded-full bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 font-bold flex items-center justify-center shrink-0 text-[11px]">
+                            {mod.module_number}
+                          </span>
+                          <div>
+                            <span className="font-semibold text-slate-900 dark:text-white block">
+                              {mod.title}
+                            </span>
+                            {mod.description && (
+                              <span className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1">
+                                {mod.description}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <div className="flex items-center space-x-3 shrink-0 pl-9 sm:pl-0 text-slate-500 dark:text-slate-400 text-[11px]">
+                          <span className="flex items-center space-x-1">
+                            <Clock className="w-3 h-3 text-slate-400" />
+                            <span>{mod.duration_minutes} mins</span>
+                          </span>
+                          {mod.content && (
+                            <span className="flex items-center space-x-1 text-indigo-600 dark:text-indigo-400">
+                              <FileText className="w-3 h-3" />
+                              <span>Learning Material</span>
+                            </span>
+                          )}
+                          {mod.is_completed ? (
+                            <span className="text-emerald-600 dark:text-emerald-400 font-semibold flex items-center space-x-1">
+                              <CheckCircle className="w-3.5 h-3.5" />
+                              <span>Completed</span>
+                            </span>
+                          ) : null}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-xs text-slate-400 p-3 bg-slate-50 dark:bg-slate-950 rounded-xl border border-slate-200 dark:border-slate-800 text-center">
+                    Module details loading or unavailable.
+                  </div>
+                )}
               </div>
             </div>
           );

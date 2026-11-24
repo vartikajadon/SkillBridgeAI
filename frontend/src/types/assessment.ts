@@ -1,6 +1,9 @@
 export interface AssessmentCatalogueItem {
   id: string;
   title: string;
+  course_id?: string | null;
+  course_title?: string | null;
+  course_code?: string | null;
   total_marks: number;
   passing_marks: number;
   question_count: number;

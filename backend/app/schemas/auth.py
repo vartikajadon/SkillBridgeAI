@@ -20,6 +20,18 @@ class ProfileCreateRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
+class UserRegisterRequest(BaseModel):
+    """Self-service registration request for new Learner accounts."""
+    email: EmailStr = Field(..., description="Government/Civil service email address")
+    password: Optional[str] = Field(None, min_length=6, description="Account password")
+    full_name: str = Field(..., min_length=2, max_length=255, description="Full legal name")
+    department: Optional[str] = Field(None, max_length=255, description="Ministry or Department")
+    designation: Optional[str] = Field(None, max_length=255, description="Official rank / designation")
+    employee_id: Optional[str] = Field(None, max_length=100, description="Civil service employee ID")
+
+    model_config = ConfigDict(extra="forbid")
+
+
 class ProfileUpdateRequest(BaseModel):
     """Self-service profile update allowlist.
     Learners/Trainers can only edit basic non-privileged profile information.

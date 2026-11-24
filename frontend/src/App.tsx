@@ -24,6 +24,7 @@ import {
   CheckCircle2,
   BookOpen,
   Layers,
+  Play,
 } from 'lucide-react';
 
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -162,6 +163,41 @@ function LandingPage(): React.JSX.Element {
             >
               Portal Login
             </Link>
+          </div>
+        </div>
+
+        {/* Video Overview Showcase Section */}
+        <div className="max-w-4xl mx-auto bg-white dark:bg-slate-900/90 border border-slate-200 dark:border-slate-800 rounded-3xl p-4 sm:p-6 shadow-2xl space-y-4">
+          <div className="flex items-center justify-between px-2">
+            <div className="flex items-center space-x-2">
+              <div className="p-1.5 rounded-lg bg-indigo-50 dark:bg-indigo-950/70 border border-indigo-200 dark:border-indigo-800 text-indigo-600 dark:text-indigo-400">
+                <Play className="w-4 h-4 fill-indigo-600 dark:fill-indigo-400" />
+              </div>
+              <div>
+                <h3 className="font-bold text-slate-900 dark:text-white text-base">
+                  Platform Overview & Demonstration
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Watch how SkillBridge AI aligns capacity building with Mission Karmayogi
+                </p>
+              </div>
+            </div>
+            <span className="text-[11px] font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950 px-2.5 py-0.5 rounded-full border border-indigo-200 dark:border-indigo-800">
+              Platform Preview
+            </span>
+          </div>
+
+          <div className="relative rounded-2xl overflow-hidden bg-slate-950 border border-slate-200 dark:border-slate-800 aspect-video shadow-inner flex items-center justify-center">
+            <video
+              controls
+              playsInline
+              preload="metadata"
+              className="w-full h-full object-cover rounded-2xl"
+              poster=""
+            >
+              <source src="/gemini_generated_video_e566de8b.mp4" type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
           </div>
         </div>
 
@@ -400,12 +436,12 @@ export default function App(): React.JSX.Element {
             }
           />
 
-          {/* Role-Specific Portals */}
+          {/* Role-Specific Portals: Strict RBAC (each user can access their own portal only) */}
           <Route
             path="/learner/*"
             element={
               <ProtectedRoute>
-                <RoleRouteGuard allowedRoles={['learner', 'trainer', 'admin']}>
+                <RoleRouteGuard allowedRoles={['learner']}>
                   <React.Suspense fallback={<PortalLoadingFallback portalName="Learner Portal" />}>
                     <LearnerPortal />
                   </React.Suspense>
@@ -418,7 +454,7 @@ export default function App(): React.JSX.Element {
             path="/trainer/*"
             element={
               <ProtectedRoute>
-                <RoleRouteGuard allowedRoles={['trainer', 'admin']}>
+                <RoleRouteGuard allowedRoles={['trainer']}>
                   <React.Suspense fallback={<PortalLoadingFallback portalName="Trainer Portal" />}>
                     <TrainerPortal />
                   </React.Suspense>

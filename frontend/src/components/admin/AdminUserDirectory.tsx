@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { UserProfile } from '../../context/AuthContext';
 import {
   CheckCircle,
+  Download,
   Loader2,
   Search,
   ShieldAlert,
@@ -25,12 +26,41 @@ export const AdminUserDirectory: React.FC<AdminUserDirectoryProps> = ({ sessionT
   const [deptFilter, setDeptFilter] = useState<string>('all');
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [updatingUserId, setUpdatingUserId] = useState<string | null>(null);
+  const [exportingUserId, setExportingUserId] = useState<string | null>(null);
+
+  const handleExportLearnerReport = async (u: UserProfile) => {
+    setExportingUserId(u.id);
+    setError(null);
+    try {
+      const res = await fetch(`/api/v1/reports/learner-transcript?user_id=${u.id}&format=pdf`, {
+        headers: {
+          Authorization: `Bearer ${sessionToken}`,
+        },
+      });
+      if (!res.ok) {
+        throw new Error(`Failed to generate learner report (${res.status})`);
+      }
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Learner_Report_${u.employee_id || u.full_name.replace(/\s+/g, '_')}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Export failed');
+    } finally {
+      setExportingUserId(null);
+    }
+  };
 
   const fetchUsers = async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await fetch('/api/v1/auth/admin/users?limit=200', {
+      const res = await fetch('/api/v1/auth/admin/users?limit=100', {
         headers: { Authorization: `Bearer ${sessionToken}` },
       });
       if (!res.ok) throw new Error(`Failed to load directory (${res.status})`);
@@ -276,24 +306,41 @@ export const AdminUserDirectory: React.FC<AdminUserDirectoryProps> = ({ sessionT
                         )}
                       </td>
                       <td className="py-3 px-4 text-right">
-                        <button
-                          disabled={isUpdating}
-                          onClick={() => handleToggleStatus(u)}
-                          className={`px-2.5 py-1 text-xs font-medium rounded-md border transition ${
-                            u.is_active
-                              ? 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800 dark:hover:bg-rose-900/60'
-                              : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800 dark:hover:bg-emerald-900/60'
-                          }`}
-                          title={u.is_active ? 'Deactivate Account' : 'Activate Account'}
-                        >
-                          {isUpdating ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          ) : u.is_active ? (
-                            'Deactivate'
-                          ) : (
-                            'Activate'
+                        <div className="flex items-center justify-end space-x-2">
+                          {u.role === 'learner' && (
+                            <button
+                              disabled={exportingUserId === u.id}
+                              onClick={() => handleExportLearnerReport(u)}
+                              className="px-2.5 py-1 text-xs font-medium rounded-md border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-100 dark:hover:bg-indigo-900 transition flex items-center space-x-1"
+                              title="Export Official Learner Report (PDF)"
+                            >
+                              {exportingUserId === u.id ? (
+                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                              ) : (
+                                <Download className="w-3.5 h-3.5" />
+                              )}
+                              <span>Export Report (PDF)</span>
+                            </button>
                           )}
-                        </button>
+                          <button
+                            disabled={isUpdating}
+                            onClick={() => handleToggleStatus(u)}
+                            className={`px-2.5 py-1 text-xs font-medium rounded-md border transition ${
+                              u.is_active
+                                ? 'bg-rose-50 text-rose-700 border-rose-200 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800 dark:hover:bg-rose-900/60'
+                                : 'bg-emerald-50 text-emerald-700 border-emerald-200 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800 dark:hover:bg-emerald-900/60'
+                            }`}
+                            title={u.is_active ? 'Deactivate Account' : 'Activate Account'}
+                          >
+                            {isUpdating ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            ) : u.is_active ? (
+                              'Deactivate'
+                            ) : (
+                              'Activate'
+                            )}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );

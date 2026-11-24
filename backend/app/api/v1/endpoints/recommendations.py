@@ -14,11 +14,13 @@ from app.models.course import Course, Enrollment
 from app.models.user import User
 from app.schemas.recommendation import (
     CourseRecommendationsResponse,
+    CourseVideoModuleItem,
     EnrollmentCreateResponse,
     LearningPathResponse,
 )
 from app.services.recommendation_engine import (
     generate_learning_path,
+    get_course_video_modules,
     get_personalized_recommendations,
 )
 
@@ -64,7 +66,37 @@ def get_learning_path(
 
 
 # -----------------------------------------------------------------------------
-# 3. Course Enrollment Action
+# 3. Course Video Modules
+# -----------------------------------------------------------------------------
+
+@router.get(
+    "/{course_id}/modules",
+    response_model=list[CourseVideoModuleItem],
+    summary="Get video modules for a course",
+    description="Returns all video modules with descriptions and durations for the specified course.",
+)
+def get_course_modules(
+    course_id: uuid.UUID,
+    current_user: User = Depends(require_roles("learner")),
+    db: Session = Depends(get_db),
+) -> list[CourseVideoModuleItem]:
+    """Fetches at least 5 structured video modules with descriptions and duration."""
+    course = db.query(Course).filter(Course.id == course_id).first()
+    if not course:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Course with ID '{course_id}' not found.",
+        )
+    enrollment = db.query(Enrollment).filter(
+        Enrollment.user_id == current_user.id,
+        Enrollment.course_id == course_id,
+    ).first()
+    progress_pct = enrollment.progress_percentage if enrollment else None
+    return get_course_video_modules(course, progress_pct)
+
+
+# -----------------------------------------------------------------------------
+# 4. Course Enrollment Action
 # -----------------------------------------------------------------------------
 
 @router.post(

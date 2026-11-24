@@ -1,3 +1,11 @@
+export interface TrainerCompetencyItem {
+  id: string;
+  code: string;
+  name: string;
+  category: string;
+  description?: string | null;
+}
+
 export interface TrainerDocumentItem {
   id: string;
   title: string;
@@ -6,6 +14,10 @@ export interface TrainerDocumentItem {
   mime_type: string;
   status: 'pending' | 'processed' | 'failed' | string;
   chunk_count: number;
+  is_published?: boolean;
+  competency_id?: string | null;
+  competency_code?: string | null;
+  competency_name?: string | null;
   created_at: string;
 }
 
@@ -17,6 +29,10 @@ export interface DocumentUploadResponse {
   mime_type: string;
   status: string;
   chunk_count: number;
+  is_published?: boolean;
+  competency_id?: string | null;
+  competency_code?: string | null;
+  competency_name?: string | null;
   created_at: string;
 }
 

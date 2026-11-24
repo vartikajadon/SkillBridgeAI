@@ -19,7 +19,6 @@ import {
   User as UserIcon,
 } from 'lucide-react';
 import { ThemeToggle } from '../../components/ThemeToggle';
-import { QuickPortalSwitcher } from '../../components/navigation/QuickPortalSwitcher';
 
 type TabType = 'upload' | 'generate' | 'approve';
 
@@ -75,7 +74,6 @@ export const TrainerPortal: React.FC = () => {
           </div>
 
           <div className="flex items-center space-x-3">
-            <QuickPortalSwitcher />
             <ThemeToggle />
             <Link
               to="/profile"

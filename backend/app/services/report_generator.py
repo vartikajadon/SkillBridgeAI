@@ -9,7 +9,7 @@ from datetime import datetime, timezone
 from typing import List, Optional
 
 from reportlab.lib import colors
-from reportlab.lib.pagesizes import A4, letter
+from reportlab.lib.pagesizes import A4, letter, landscape
 from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
 from reportlab.lib.units import inch
 from reportlab.pdfgen import canvas
@@ -228,6 +228,191 @@ class ReportGeneratorService:
 
         # Build document with custom dynamic NumberedCanvas
         doc.build(elements, canvasmaker=NumberedCanvas)
+        return buffer.getvalue()
+
+    @staticmethod
+    def generate_course_certificate_pdf(
+        learner_name: str,
+        employee_id: str,
+        department: str,
+        designation: str,
+        course_title: str,
+        course_code: str,
+        provider: str,
+        completion_date: str,
+        certificate_id: str,
+    ) -> bytes:
+        """Generates an official landscape certificate of course completion."""
+        buffer = io.BytesIO()
+        page_width, page_height = landscape(letter)  # 792 x 612 pt
+        doc = SimpleDocTemplate(
+            buffer,
+            pagesize=(page_width, page_height),
+            leftMargin=54,
+            rightMargin=54,
+            topMargin=45,
+            bottomMargin=45,
+        )
+
+        def draw_certificate_border(canv, document):
+            canv.saveState()
+            # Outer deep navy border
+            canv.setStrokeColor(colors.HexColor("#1E3A8A"))
+            canv.setLineWidth(4)
+            canv.rect(24, 24, page_width - 48, page_height - 48)
+
+            # Inner antique gold accent border
+            canv.setStrokeColor(colors.HexColor("#D97706"))
+            canv.setLineWidth(1.5)
+            canv.rect(30, 30, page_width - 60, page_height - 60)
+
+            # Corner decorative accents
+            canv.setFillColor(colors.HexColor("#D97706"))
+            canv.circle(36, 36, 4, fill=1, stroke=0)
+            canv.circle(page_width - 36, 36, 4, fill=1, stroke=0)
+            canv.circle(36, page_height - 36, 4, fill=1, stroke=0)
+            canv.circle(page_width - 36, page_height - 36, 4, fill=1, stroke=0)
+            canv.restoreState()
+
+        styles = getSampleStyleSheet()
+
+        gov_header_style = ParagraphStyle(
+            "GovCertHeader",
+            parent=styles["Normal"],
+            fontName="Helvetica-Bold",
+            fontSize=11,
+            leading=14,
+            alignment=1,  # Centered
+            textColor=colors.HexColor("#475569"),
+        )
+        cert_title_style = ParagraphStyle(
+            "CertTitle",
+            parent=styles["Normal"],
+            fontName="Helvetica-Bold",
+            fontSize=26,
+            leading=32,
+            alignment=1,
+            textColor=colors.HexColor("#1E3A8A"),
+        )
+        cert_sub_style = ParagraphStyle(
+            "CertSub",
+            parent=styles["Normal"],
+            fontName="Helvetica",
+            fontSize=10,
+            leading=13,
+            alignment=1,
+            textColor=colors.HexColor("#B45309"),
+        )
+        presented_style = ParagraphStyle(
+            "CertPresented",
+            parent=styles["Normal"],
+            fontName="Helvetica-Oblique",
+            fontSize=11,
+            leading=15,
+            alignment=1,
+            textColor=colors.HexColor("#64748B"),
+        )
+        name_style = ParagraphStyle(
+            "CertName",
+            parent=styles["Normal"],
+            fontName="Helvetica-Bold",
+            fontSize=24,
+            leading=28,
+            alignment=1,
+            textColor=colors.HexColor("#0F172A"),
+        )
+        body_style = ParagraphStyle(
+            "CertBody",
+            parent=styles["Normal"],
+            fontName="Helvetica",
+            fontSize=11,
+            leading=16,
+            alignment=1,
+            textColor=colors.HexColor("#334155"),
+        )
+        course_title_style = ParagraphStyle(
+            "CertCourseTitle",
+            parent=styles["Normal"],
+            fontName="Helvetica-Bold",
+            fontSize=16,
+            leading=20,
+            alignment=1,
+            textColor=colors.HexColor("#1E3A8A"),
+        )
+        meta_style = ParagraphStyle(
+            "CertMeta",
+            parent=styles["Normal"],
+            fontName="Helvetica-Bold",
+            fontSize=9,
+            leading=12,
+            alignment=1,
+            textColor=colors.HexColor("#64748B"),
+        )
+        sig_label_style = ParagraphStyle(
+            "SigLabel",
+            parent=styles["Normal"],
+            fontName="Helvetica",
+            fontSize=8,
+            leading=10,
+            alignment=1,
+            textColor=colors.HexColor("#64748B"),
+        )
+        sig_title_style = ParagraphStyle(
+            "SigTitle",
+            parent=styles["Normal"],
+            fontName="Helvetica-Bold",
+            fontSize=9,
+            leading=11,
+            alignment=1,
+            textColor=colors.HexColor("#1E293B"),
+        )
+
+        elements = []
+        elements.append(Spacer(1, 10))
+        elements.append(Paragraph("GOVERNMENT OF INDIA • MISSION KARMAYOGI", gov_header_style))
+        elements.append(Paragraph("National Programme for Civil Services Capacity Building (NPCSCB)", cert_sub_style))
+        elements.append(Spacer(1, 12))
+        elements.append(Paragraph("CERTIFICATE OF COURSE COMPLETION", cert_title_style))
+        elements.append(Spacer(1, 10))
+        elements.append(Paragraph("This is to officially certify that", presented_style))
+        elements.append(Spacer(1, 8))
+        elements.append(Paragraph(learner_name, name_style))
+        elements.append(Spacer(1, 4))
+        elements.append(Paragraph(f"Employee ID: {employee_id or 'GOV-IN'} • Department: {department or 'General Administration'} • {designation or 'Officer'}", meta_style))
+        elements.append(Spacer(1, 12))
+        elements.append(Paragraph("has successfully satisfied all rigorous curriculum modules, technical competencies, and diagnostic assessments for:", body_style))
+        elements.append(Spacer(1, 8))
+        elements.append(Paragraph(course_title, course_title_style))
+        elements.append(Spacer(1, 4))
+        elements.append(Paragraph(f"Course Code: {course_code} • Accredited Provider: {provider} • Framework: FRAC Standards", meta_style))
+        elements.append(Spacer(1, 16))
+
+        # Signatures and verification bar
+        sig_table_data = [
+            [
+                Paragraph("<b>Certified & Approved</b><br/>SkillBridge AI Capacity Authority", sig_title_style),
+                Paragraph(f"<b>Certificate Verification ID:</b><br/>{certificate_id}", meta_style),
+                Paragraph("<b>Mission Karmayogi Registry</b><br/>Department of Personnel & Training (DoPT)", sig_title_style),
+            ],
+            [
+                Paragraph("Digitally Verified via SHA-256", sig_label_style),
+                Paragraph(f"Date of Award: {completion_date}", sig_label_style),
+                Paragraph("Official Government e-Certificate", sig_label_style),
+            ]
+        ]
+        sig_table = Table(sig_table_data, colWidths=[200, 280, 200])
+        sig_table.setStyle(
+            TableStyle([
+                ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                ("VALIGN", (0, 0), (-1, -1), "MIDDLE"),
+                ("LINEBELOW", (0, 0), (0, 0), 1, colors.HexColor("#94A3B8")),
+                ("LINEBELOW", (2, 0), (2, 0), 1, colors.HexColor("#94A3B8")),
+                ("PADDING", (0, 0), (-1, -1), 3),
+            ])
+        )
+        elements.append(sig_table)
+
+        doc.build(elements, onFirstPage=draw_certificate_border)
         return buffer.getvalue()
 
 

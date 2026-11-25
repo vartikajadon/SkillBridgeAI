@@ -6,10 +6,12 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING, List, Optional
 from sqlalchemy import (
+    Boolean,
     CheckConstraint,
     DateTime,
     ForeignKey,
     Integer,
+    JSON,
     String,
     Text,
     UniqueConstraint,
@@ -22,6 +24,7 @@ if TYPE_CHECKING:
     from app.models.competency import Competency
     from app.models.user import User
     from app.models.quiz import Quiz
+    from app.models.document import TrainingDocument
 
 
 class Course(Base, UUIDPrimaryKeyMixin, TimestampMixin):
@@ -87,6 +90,12 @@ class Course(Base, UUIDPrimaryKeyMixin, TimestampMixin):
     quizzes: Mapped[List["Quiz"]] = relationship(
         "Quiz",
         back_populates="course",
+    )
+    modules: Mapped[List["CourseModule"]] = relationship(
+        "CourseModule",
+        back_populates="course",
+        cascade="all, delete-orphan",
+        order_by="CourseModule.module_number.asc()",
     )
 
     def __repr__(self) -> str:
@@ -208,3 +217,85 @@ class Enrollment(Base, UUIDPrimaryKeyMixin):
 
     def __repr__(self) -> str:
         return f"<Enrollment(user={self.user_id}, course={self.course_id}, status='{self.status}', progress={self.progress_percentage}%)>"
+
+
+class CourseModule(Base, UUIDPrimaryKeyMixin, TimestampMixin):
+    """Table 14: course_modules
+    Modular learning units for a course, containing title, description, duration,
+    supporting video URL / file, study content/document reference, and publication status.
+    """
+    __tablename__ = "course_modules"
+    __table_args__ = (
+        CheckConstraint("module_number >= 1", name="ck_course_module_number"),
+    )
+
+    course_id: Mapped[uuid.UUID] = mapped_column(
+        SQLiteUUID(),
+        ForeignKey("courses.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    module_number: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=1,
+        doc="Sequential order of the module within the course",
+    )
+    title: Mapped[str] = mapped_column(
+        String(255),
+        nullable=False,
+        doc="Module title",
+    )
+    description: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True,
+        doc="Module overview or syllabus notes",
+    )
+    duration_minutes: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=20,
+        doc="Estimated completion time in minutes",
+    )
+    video_url: Mapped[Optional[str]] = mapped_column(
+        String(512),
+        nullable=True,
+        doc="Supporting video file URL or stream link",
+    )
+    content: Mapped[Optional[str]] = mapped_column(
+        Text,
+        nullable=True,
+        doc="Extracted text or markdown learning material notes",
+    )
+    document_id: Mapped[Optional[uuid.UUID]] = mapped_column(
+        SQLiteUUID(),
+        ForeignKey("training_documents.id", ondelete="SET NULL"),
+        nullable=True,
+        doc="Reference to uploaded training document if attached",
+    )
+    skills_covered: Mapped[Optional[List[str]]] = mapped_column(
+        JSON,
+        nullable=True,
+        default=list,
+        doc="Codes or names of skills/competencies addressed by this module",
+    )
+    is_published: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=True,
+        index=True,
+        doc="Whether module is published and accessible to civil service learners",
+    )
+
+    # Relationships
+    course: Mapped["Course"] = relationship(
+        "Course",
+        back_populates="modules",
+    )
+    document: Mapped[Optional["TrainingDocument"]] = relationship(
+        "TrainingDocument",
+    )
+
+    def __repr__(self) -> str:
+        return f"<CourseModule(id={self.id}, course_id={self.course_id}, num={self.module_number}, title='{self.title}')>"
+

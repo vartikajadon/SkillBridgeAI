@@ -6,7 +6,7 @@ from app.models.base import Base
 from app.models.user import User
 from app.models.job_role import JobRole
 from app.models.competency import Competency, RoleCompetency, LearnerCompetency
-from app.models.course import Course, CourseCompetency, Enrollment
+from app.models.course import Course, CourseCompetency, CourseModule, Enrollment
 from app.models.document import TrainingDocument, DocumentChunk
 from app.models.quiz import Quiz, QuizAttempt
 from app.models.audit import AuditLog
@@ -20,6 +20,7 @@ __all__ = [
     "LearnerCompetency",
     "Course",
     "CourseCompetency",
+    "CourseModule",
     "Enrollment",
     "TrainingDocument",
     "DocumentChunk",

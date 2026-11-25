@@ -13,6 +13,10 @@ export interface AssessmentCatalogueItem {
   last_attempt_score: number | null;
   last_attempt_percentage: number | null;
   last_attempt_passed: boolean | null;
+  course_progress_percentage?: number | null;
+  course_completed?: boolean;
+  is_locked?: boolean;
+  lock_reason?: string | null;
 }
 
 export interface SanitizedQuestion {

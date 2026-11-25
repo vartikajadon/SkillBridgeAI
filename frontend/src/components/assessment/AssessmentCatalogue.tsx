@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { AssessmentCatalogueItem } from '../../types/assessment';
-import { Award, BookOpen, CheckCircle, Clock, FileQuestion, HelpCircle, RefreshCw } from 'lucide-react';
+import { Award, BookOpen, CheckCircle, Clock, FileQuestion, HelpCircle, Lock, RefreshCw } from 'lucide-react';
 
 interface Props {
   sessionToken: string;
@@ -90,10 +90,17 @@ export const AssessmentCatalogue: React.FC<Props> = ({ sessionToken, onSelectAss
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {assessments.map((quiz) => {
           const hasAttempted = quiz.completed_attempts_count > 0;
+          const isLocked = quiz.is_locked || (!quiz.course_completed && (quiz.course_progress_percentage ?? 0) < 100);
+          const progressPct = quiz.course_progress_percentage ?? 0;
+
           return (
             <div
               key={quiz.id}
-              className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 rounded-2xl p-6 flex flex-col justify-between space-y-4 shadow-sm hover:shadow-md transition"
+              className={`bg-white dark:bg-slate-900 border rounded-2xl p-6 flex flex-col justify-between space-y-4 shadow-sm transition ${
+                isLocked
+                  ? 'border-slate-200 dark:border-slate-800 opacity-95'
+                  : 'border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 hover:shadow-md'
+              }`}
             >
               <div className="space-y-3">
                 <div className="flex items-start justify-between gap-3">
@@ -103,7 +110,10 @@ export const AssessmentCatalogue: React.FC<Props> = ({ sessionToken, onSelectAss
                         Pursuing Course: {quiz.course_code ? `${quiz.course_code} - ` : ''}{quiz.course_title}
                       </span>
                     )}
-                    <h3 className="font-semibold text-base text-slate-900 dark:text-white">{quiz.title}</h3>
+                    <h3 className="font-semibold text-base text-slate-900 dark:text-white flex items-center space-x-2">
+                      <span>{quiz.title}</span>
+                      {isLocked && <Lock className="w-4 h-4 text-amber-500 inline shrink-0" />}
+                    </h3>
                   </div>
                   {hasAttempted && (
                     <span
@@ -152,20 +162,55 @@ export const AssessmentCatalogue: React.FC<Props> = ({ sessionToken, onSelectAss
                     </div>
                   </div>
                 )}
+
+                {/* Course Completion Requirement Banner */}
+                {isLocked && (
+                  <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/70 rounded-xl p-3 flex items-start space-x-2.5 text-xs text-amber-900 dark:text-amber-200">
+                    <Lock className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+                    <div className="space-y-1">
+                      <div className="font-semibold flex items-center space-x-2">
+                        <span>Locked Evaluation</span>
+                        <span className="text-[10px] px-2 py-0.5 rounded-full bg-amber-200/80 dark:bg-amber-900/80 text-amber-900 dark:text-amber-200 font-mono font-bold">
+                          Course Progress: {progressPct}% / 100%
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-amber-800/90 dark:text-amber-300">
+                        {quiz.lock_reason || 'Complete all modules of this course to 100% to unlock and attempt this diagnostic assessment.'}
+                      </p>
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="pt-2 flex items-center justify-between border-t border-slate-200 dark:border-slate-800/60">
                 <span className="text-[11px] text-slate-500 dark:text-slate-400">
-                  {hasAttempted
+                  {isLocked
+                    ? `Locked (${progressPct}% completed)`
+                    : hasAttempted
                     ? `${quiz.completed_attempts_count} previous attempt(s)`
                     : 'Not yet attempted'}
                 </span>
                 <button
-                  onClick={() => onSelectAssessment(quiz.id)}
-                  className="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-xs font-semibold shadow transition flex items-center space-x-1.5"
+                  disabled={isLocked}
+                  onClick={() => !isLocked && onSelectAssessment(quiz.id)}
+                  className={`px-4 py-2 rounded-lg text-xs font-semibold shadow transition flex items-center space-x-1.5 ${
+                    isLocked
+                      ? 'bg-slate-200 text-slate-400 dark:bg-slate-800 dark:text-slate-500 cursor-not-allowed shadow-none'
+                      : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-indigo-500/20'
+                  }`}
+                  title={isLocked ? 'Complete course 100% to unlock this quiz' : undefined}
                 >
-                  <BookOpen className="w-3.5 h-3.5" />
-                  <span>{hasAttempted ? 'Retake Assessment' : 'Start Assessment'}</span>
+                  {isLocked ? (
+                    <>
+                      <Lock className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
+                      <span>Locked (Complete Course 100%)</span>
+                    </>
+                  ) : (
+                    <>
+                      <BookOpen className="w-3.5 h-3.5" />
+                      <span>{hasAttempted ? 'Retake Assessment' : 'Start Assessment'}</span>
+                    </>
+                  )}
                 </button>
               </div>
             </div>

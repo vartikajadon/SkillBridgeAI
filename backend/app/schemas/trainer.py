@@ -71,6 +71,37 @@ class DocumentPublishResponse(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
 
+class TrainerCourseModuleItem(BaseModel):
+    id: uuid.UUID
+    course_id: uuid.UUID
+    course_code: str
+    course_title: str
+    module_number: int
+    title: str
+    description: Optional[str] = None
+    duration_minutes: int = 20
+    video_url: Optional[str] = None
+    content: Optional[str] = None
+    document_id: Optional[uuid.UUID] = None
+    document_title: Optional[str] = None
+    skills_covered: List[str] = Field(default_factory=list)
+    is_published: bool = True
+    created_at: datetime
+
+    model_config = ConfigDict(extra="forbid", from_attributes=True)
+
+
+class ModulePublishResponse(BaseModel):
+    id: uuid.UUID
+    course_id: uuid.UUID
+    module_number: int
+    title: str
+    is_published: bool
+    message: str
+
+    model_config = ConfigDict(extra="forbid")
+
+
 # -----------------------------------------------------------------------------
 # 2. AI Quiz Generation Request & Responses
 # -----------------------------------------------------------------------------

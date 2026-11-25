@@ -445,3 +445,122 @@ def test_quiz_with_attempts_safely_archived_instead_of_deleted():
         archived_q = db.query(Quiz).filter(Quiz.id == uuid.UUID(quiz_id)).first()
         assert archived_q is not None
         assert archived_q.status == "archived"
+
+
+def test_trainer_upload_learning_module_with_video_and_skills():
+    """Verify trainer can add a logical learning module under a selected course
+    with document, multi-skills in advance, and supporting video.
+    When published, the new module is immediately visible to learners."""
+    trainer_token = create_token(sub=str(USER_TRAINER_ID), email="trainer.sharma@skillbridge.gov.in")
+    trainer_headers = {"Authorization": f"Bearer {trainer_token}"}
+
+    # 1. Fetch available courses
+    c_res = client.get("/api/v1/trainer/courses", headers=trainer_headers)
+    assert c_res.status_code == 200
+    courses = c_res.json()
+    assert len(courses) > 0
+    target_course = courses[0]
+    course_id = target_course["id"]
+
+    # 2. Upload learning module with document, video url, and multi skills
+    doc_content = b"### Advanced Policy Analysis Module\nDetailed study guidelines on macroeconomic metrics."
+    res = client.post(
+        "/api/v1/trainer/modules/upload",
+        headers=trainer_headers,
+        data={
+            "course_id": course_id,
+            "title": "Module 6: Advanced Macroeconomic Policy Modeling",
+            "description": "Comprehensive practical lecture on policy metrics.",
+            "duration_minutes": "30",
+            "skills": '["STAT_ANALYSIS", "DATA_LITERACY"]',
+            "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4",
+            "is_published": "true",
+        },
+        files={
+            "document_file": ("policy_notes.txt", io.BytesIO(doc_content), "text/plain"),
+        },
+    )
+    assert res.status_code == 201
+    mod_data = res.json()
+    assert mod_data["title"] == "Module 6: Advanced Macroeconomic Policy Modeling"
+    assert mod_data["module_number"] >= 6
+    assert mod_data["video_url"] == "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4"
+    assert mod_data["is_published"] is True
+    assert "STAT_ANALYSIS" in mod_data["skills_covered"]
+
+    # 3. Verify learners see this new module inside the course
+    learner_token = create_token(sub=str(USER_LEARNER_ID), email="amit.patel@gov.in")
+    learner_headers = {"Authorization": f"Bearer {learner_token}"}
+
+    l_res = client.get(f"/api/v1/recommendations/{course_id}/modules", headers=learner_headers)
+    assert l_res.status_code == 200
+    learner_mods = l_res.json()
+    # At least 6 modules now
+    assert len(learner_mods) >= 6
+    custom_mod = next((m for m in learner_mods if "Advanced Macroeconomic" in m["title"]), None)
+    assert custom_mod is not None
+    assert custom_mod["video_url"] == "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4"
+
+
+def test_learner_quiz_locked_until_100_percent_course_completion():
+    """Verify that quizzes for any course remain locked/disabled until the course is 100% completed."""
+    from app.models.course import Course, Enrollment
+
+    learner_token = create_token(sub=str(USER_LEARNER_ID), email="amit.patel@gov.in")
+    learner_headers = {"Authorization": f"Bearer {learner_token}"}
+
+    with TestingSessionLocal() as db:
+        course = db.query(Course).first()
+        assert course is not None
+
+        # Reset enrollment to 40% progress (not completed)
+        enrollment = db.query(Enrollment).filter(
+            Enrollment.user_id == USER_LEARNER_ID,
+            Enrollment.course_id == course.id,
+        ).first()
+        if not enrollment:
+            enrollment = Enrollment(
+                user_id=USER_LEARNER_ID,
+                course_id=course.id,
+                status="in_progress",
+                progress_percentage=40,
+            )
+            db.add(enrollment)
+        else:
+            enrollment.status = "in_progress"
+            enrollment.progress_percentage = 40
+        db.commit()
+
+    # Check catalogue when course is 40%
+    res = client.get("/api/v1/assessment/catalogue", headers=learner_headers)
+    assert res.status_code == 200
+    quizzes = res.json()
+    if quizzes:
+        matching_quiz = next((q for q in quizzes if q.get("course_id") == str(course.id)), None)
+        if matching_quiz:
+            assert matching_quiz["is_locked"] is True
+            assert matching_quiz["course_completed"] is False
+            assert matching_quiz["course_progress_percentage"] == 40
+            assert "Locked" in matching_quiz["lock_reason"]
+
+    # Now simulate completing the course to 100%
+    with TestingSessionLocal() as db:
+        enrollment = db.query(Enrollment).filter(
+            Enrollment.user_id == USER_LEARNER_ID,
+            Enrollment.course_id == course.id,
+        ).first()
+        enrollment.progress_percentage = 100
+        enrollment.status = "completed"
+        db.commit()
+
+    # Check catalogue again: quiz should now be unlocked!
+    res2 = client.get("/api/v1/assessment/catalogue", headers=learner_headers)
+    assert res2.status_code == 200
+    quizzes2 = res2.json()
+    if quizzes2:
+        matching_quiz2 = next((q for q in quizzes2 if q.get("course_id") == str(course.id)), None)
+        if matching_quiz2:
+            assert matching_quiz2["is_locked"] is False
+            assert matching_quiz2["course_completed"] is True
+            assert matching_quiz2["course_progress_percentage"] == 100
+

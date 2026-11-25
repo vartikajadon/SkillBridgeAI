@@ -108,7 +108,7 @@ export const TrainerPortal: React.FC = () => {
               }`}
           >
             <Upload className="w-4 h-4" />
-            <span>1. Upload Training Material (Course)</span>
+            <span>1. Learning Modules & Training Material</span>
           </button>
 
           {/* SCREEN 2 */}

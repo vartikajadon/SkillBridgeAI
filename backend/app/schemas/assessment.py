@@ -28,6 +28,10 @@ class AssessmentCatalogueItem(BaseModel):
     last_attempt_score: Optional[int] = None
     last_attempt_percentage: Optional[float] = None
     last_attempt_passed: Optional[bool] = None
+    course_progress_percentage: Optional[int] = None
+    course_completed: bool = False
+    is_locked: bool = False
+    lock_reason: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 

@@ -114,6 +114,24 @@ export interface TrainerCourseItem {
   updated_at: string;
 }
 
+export interface TrainerCourseModuleItem {
+  id: string;
+  course_id: string;
+  course_code: string;
+  course_title: string;
+  module_number: number;
+  title: string;
+  description?: string | null;
+  duration_minutes: number;
+  video_url?: string | null;
+  content?: string | null;
+  document_id?: string | null;
+  document_title?: string | null;
+  skills_covered: string[];
+  is_published: boolean;
+  created_at: string;
+}
+
 export interface TrainerDashboardResponse {
   summary: TrainerSummaryMetrics;
   documents: TrainerDocumentItem[];

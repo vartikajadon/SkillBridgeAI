@@ -784,6 +784,25 @@ def get_course_video_modules(course: Course, progress_pct: Optional[int] = None)
                 "content": f"### Module 5: Executive Synthesis, Assessment & Practical Application\n\n#### 1. Synthesis & Action Roadmaps\n- Formulating policy briefs, administrative notes, and implementation plans for senior ministry leadership.\n- Post-training field application and continuous professional development under the FRAC framework.",
             },
         ]
+    else:
+        # Create a copy so we don't mutate the global catalog dict
+        raw_modules = [dict(m) for m in raw_modules]
+
+    # Append custom modules added and published by trainers
+    custom_modules = getattr(course, "modules", None)
+    if custom_modules:
+        next_num = len(raw_modules) + 1
+        for cm in custom_modules:
+            if getattr(cm, "is_published", True):
+                raw_modules.append({
+                    "module_number": next_num,
+                    "title": cm.title,
+                    "duration_minutes": cm.duration_minutes or 20,
+                    "description": cm.description or "",
+                    "video_url": cm.video_url,
+                    "content": cm.content or "",
+                })
+                next_num += 1
 
     pct = progress_pct or 0
     total_mods = len(raw_modules)

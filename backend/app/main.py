@@ -2,9 +2,11 @@
 SkillBridge AI FastAPI Main Application
 """
 import logging
+import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -12,6 +14,8 @@ from slowapi.errors import RateLimitExceeded
 
 from app.core.config import settings, validate_rag_providers_for_environment
 from app.api.v1.router import api_router
+from app.db.base import Base
+from app.db.session import engine
 
 logger = logging.getLogger(__name__)
 
@@ -42,6 +46,12 @@ class SecurityHeadersMiddleware(BaseHTTPMiddleware):
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    # Ensure database schema is up-to-date (including custom course_modules)
+    try:
+        Base.metadata.create_all(bind=engine)
+    except Exception as e:
+        logger.warning(f"Database schema auto-creation notice: {e}")
+
     # Validate provider configuration on startup without exposing secrets
     validate_rag_providers_for_environment(settings)
     logger.info(
@@ -75,6 +85,12 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+# Static Storage for uploaded video modules & materials
+storage_dir = os.path.join(os.getcwd(), "storage")
+os.makedirs(os.path.join(storage_dir, "videos"), exist_ok=True)
+os.makedirs(os.path.join(storage_dir, "documents"), exist_ok=True)
+app.mount("/storage", StaticFiles(directory=storage_dir), name="storage")
 
 # Include API v1 Router under /api/v1
 app.include_router(api_router, prefix=settings.API_V1_STR)

@@ -3,6 +3,7 @@ Trainer & Faculty Management Endpoints (Phase 6)
 Provides document upload, ingestion & text chunking, AI quiz generation,
 quiz reviewing & editing, publishing workflows, and archival protection.
 """
+import json
 import os
 import uuid
 from typing import List, Optional
@@ -12,7 +13,7 @@ from sqlalchemy.orm import Session
 from app.api.deps import require_roles
 from app.db.session import get_db
 from app.models.competency import Competency
-from app.models.course import Course, CourseCompetency, Enrollment
+from app.models.course import Course, CourseCompetency, CourseModule, Enrollment
 from app.models.document import DocumentChunk, TrainingDocument
 from app.models.quiz import Quiz, QuizAttempt
 from app.models.user import User
@@ -20,19 +21,21 @@ from app.schemas.trainer import (
     CoursePublishResponse,
     DocumentPublishResponse,
     DocumentUploadResponse,
+    ModulePublishResponse,
     QuizDeleteResponse,
     QuizGenerateRequest,
     QuizPublishResponse,
     QuizUpdateRequest,
     TrainerCompetencyItem,
     TrainerCourseItem,
+    TrainerCourseModuleItem,
     TrainerDocumentItem,
     TrainerQuizDetailResponse,
     TrainerQuizListItem,
 )
 from app.services.assessment_engine import validate_quiz_definition
 from app.services.document_embedding import embed_document_chunks
-from app.services.document_processor import process_and_store_document
+from app.services.document_processor import process_and_store_document, sanitize_filename
 from app.services.quiz_generator import generate_quiz_from_document
 
 router = APIRouter()
@@ -736,3 +739,310 @@ def unpublish_course(
         status="draft",
         message=f"Course '{course.title}' moved to draft status.",
     )
+
+
+# -----------------------------------------------------------------------------
+# 5. Course Learning Module Ingestion & Management
+# -----------------------------------------------------------------------------
+
+@router.get(
+    "/courses/{course_id}/modules",
+    response_model=List[TrainerCourseModuleItem],
+    summary="List modules under a course for trainer review",
+)
+def list_course_modules_for_trainer(
+    course_id: uuid.UUID,
+    current_user: User = Depends(require_roles("trainer", "admin")),
+    db: Session = Depends(get_db),
+) -> List[TrainerCourseModuleItem]:
+    course = db.query(Course).filter(Course.id == course_id).first()
+    if not course:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Course with ID '{course_id}' was not found.",
+        )
+
+    modules = (
+        db.query(CourseModule)
+        .filter(CourseModule.course_id == course_id)
+        .order_by(CourseModule.module_number.asc())
+        .all()
+    )
+
+    items = []
+    for m in modules:
+        items.append(
+            TrainerCourseModuleItem(
+                id=m.id,
+                course_id=course.id,
+                course_code=course.code,
+                course_title=course.title,
+                module_number=m.module_number,
+                title=m.title,
+                description=m.description,
+                duration_minutes=m.duration_minutes,
+                video_url=m.video_url,
+                content=m.content,
+                document_id=m.document_id,
+                document_title=m.document.title if m.document else None,
+                skills_covered=m.skills_covered or [],
+                is_published=m.is_published,
+                created_at=m.created_at,
+            )
+        )
+    return items
+
+
+@router.post(
+    "/modules/upload",
+    response_model=TrainerCourseModuleItem,
+    status_code=status.HTTP_201_CREATED,
+    summary="Add a new learning module under a selected course with document, skills, and supporting video",
+)
+async def upload_course_learning_module(
+    course_id: str = Form(...),
+    title: str = Form(...),
+    description: Optional[str] = Form(None),
+    duration_minutes: int = Form(20),
+    skills: Optional[str] = Form(None),
+    document_file: Optional[UploadFile] = File(None),
+    video_file: Optional[UploadFile] = File(None),
+    video_url: Optional[str] = Form(None),
+    is_published: bool = Form(True),
+    current_user: User = Depends(require_roles("trainer", "admin")),
+    db: Session = Depends(get_db),
+) -> TrainerCourseModuleItem:
+    # 1. Resolve and validate selected course
+    course = None
+    try:
+        c_uuid = uuid.UUID(course_id.strip())
+        course = db.query(Course).filter(Course.id == c_uuid).first()
+    except ValueError:
+        course = db.query(Course).filter(Course.code == course_id.strip()).first()
+
+    if not course:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Course '{course_id}' was not found. Please select a valid course first.",
+        )
+
+    # 2. Process supporting video (File upload or direct URL)
+    final_video_url = (video_url.strip() if video_url and video_url.strip() else None)
+    if video_file and video_file.filename:
+        video_bytes = await video_file.read()
+        if len(video_bytes) > 0:
+            clean_video_name = sanitize_filename(video_file.filename)
+            vid_id = uuid.uuid4().hex[:10]
+            storage_videos_dir = os.path.join(os.getcwd(), "storage", "videos")
+            os.makedirs(storage_videos_dir, exist_ok=True)
+            saved_filename = f"{vid_id}_{clean_video_name}"
+            vid_path = os.path.join(storage_videos_dir, saved_filename)
+            with open(vid_path, "wb") as vf:
+                vf.write(video_bytes)
+            final_video_url = f"/storage/videos/{saved_filename}"
+
+    # 3. Process learning material document if uploaded
+    doc_obj = None
+    module_content = None
+    if document_file and document_file.filename:
+        doc_bytes = await document_file.read()
+        if len(doc_bytes) > 0:
+            try:
+                doc_obj, chunks = process_and_store_document(
+                    db=db,
+                    file_bytes=doc_bytes,
+                    original_filename=document_file.filename,
+                    mime_type=document_file.content_type or "application/pdf",
+                    title=f"{course.code} - {title}",
+                    uploader_id=current_user.id,
+                )
+                doc_obj.is_published = is_published
+                db.commit()
+
+                # Extract content preview / markdown text
+                if chunks:
+                    module_content = "\n\n".join([c.chunk_text for c in chunks[:5]])
+
+                try:
+                    embed_document_chunks(db, doc_obj.id)
+                except Exception:
+                    pass
+            except Exception as e:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail=f"Failed to process learning material document: {str(e)}",
+                )
+
+    if not module_content and description:
+        module_content = f"### {title}\n\n{description}"
+
+    # 4. Resolve multi-selected skills / competencies in advance
+    skills_covered_list: List[str] = []
+    if skills and skills.strip():
+        # Parse either JSON array e.g. ["STAT-01", "DATA-VIZ"] or comma-separated string
+        raw_skills = []
+        try:
+            parsed = json.loads(skills)
+            if isinstance(parsed, list):
+                raw_skills = [str(s).strip() for s in parsed if str(s).strip()]
+            else:
+                raw_skills = [str(parsed).strip()]
+        except Exception:
+            raw_skills = [s.strip() for s in skills.split(",") if s.strip()]
+
+        for s in raw_skills:
+            comp = None
+            try:
+                s_uuid = uuid.UUID(s)
+                comp = db.query(Competency).filter(Competency.id == s_uuid).first()
+            except ValueError:
+                pass
+            if not comp:
+                comp = db.query(Competency).filter(
+                    (Competency.code == s) | (Competency.name.ilike(s))
+                ).first()
+
+            if comp:
+                skills_covered_list.append(comp.code)
+                # Map competency to course if not already mapped
+                existing_map = db.query(CourseCompetency).filter(
+                    CourseCompetency.course_id == course.id,
+                    CourseCompetency.competency_id == comp.id,
+                ).first()
+                if not existing_map:
+                    cc = CourseCompetency(
+                        course_id=course.id,
+                        competency_id=comp.id,
+                        target_level_achieved=3,
+                    )
+                    db.add(cc)
+
+                if doc_obj and not doc_obj.competency_id:
+                    doc_obj.competency_id = comp.id
+
+    db.commit()
+
+    # 5. Determine sequential module number
+    existing_custom_count = db.query(CourseModule).filter(CourseModule.course_id == course.id).count()
+    module_number = 5 + existing_custom_count + 1
+
+    # 6. Create CourseModule
+    module = CourseModule(
+        course_id=course.id,
+        module_number=module_number,
+        title=title.strip(),
+        description=description.strip() if description else None,
+        duration_minutes=duration_minutes if duration_minutes > 0 else 20,
+        video_url=final_video_url,
+        content=module_content,
+        document_id=doc_obj.id if doc_obj else None,
+        skills_covered=skills_covered_list,
+        is_published=is_published,
+    )
+    db.add(module)
+    db.commit()
+    db.refresh(module)
+
+    return TrainerCourseModuleItem(
+        id=module.id,
+        course_id=course.id,
+        course_code=course.code,
+        course_title=course.title,
+        module_number=module.module_number,
+        title=module.title,
+        description=module.description,
+        duration_minutes=module.duration_minutes,
+        video_url=module.video_url,
+        content=module.content,
+        document_id=module.document_id,
+        document_title=doc_obj.title if doc_obj else None,
+        skills_covered=module.skills_covered or [],
+        is_published=module.is_published,
+        created_at=module.created_at,
+    )
+
+
+@router.post(
+    "/modules/{module_id}/publish",
+    response_model=ModulePublishResponse,
+    summary="Publish course module to civil service learners",
+)
+def publish_course_module(
+    module_id: uuid.UUID,
+    current_user: User = Depends(require_roles("trainer", "admin")),
+    db: Session = Depends(get_db),
+) -> ModulePublishResponse:
+    module = db.query(CourseModule).filter(CourseModule.id == module_id).first()
+    if not module:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Course module with ID '{module_id}' was not found.",
+        )
+
+    module.is_published = True
+    if module.document:
+        module.document.is_published = True
+    db.commit()
+
+    return ModulePublishResponse(
+        id=module.id,
+        course_id=module.course_id,
+        module_number=module.module_number,
+        title=module.title,
+        is_published=True,
+        message=f"Learning module '{module.title}' is now published and live for all learners.",
+    )
+
+
+@router.post(
+    "/modules/{module_id}/unpublish",
+    response_model=ModulePublishResponse,
+    summary="Unpublish course module back to draft",
+)
+def unpublish_course_module(
+    module_id: uuid.UUID,
+    current_user: User = Depends(require_roles("trainer", "admin")),
+    db: Session = Depends(get_db),
+) -> ModulePublishResponse:
+    module = db.query(CourseModule).filter(CourseModule.id == module_id).first()
+    if not module:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Course module with ID '{module_id}' was not found.",
+        )
+
+    module.is_published = False
+    db.commit()
+
+    return ModulePublishResponse(
+        id=module.id,
+        course_id=module.course_id,
+        module_number=module.module_number,
+        title=module.title,
+        is_published=False,
+        message=f"Learning module '{module.title}' moved to draft status.",
+    )
+
+
+@router.delete(
+    "/modules/{module_id}",
+    status_code=status.HTTP_200_OK,
+    summary="Delete custom course module",
+)
+def delete_course_module(
+    module_id: uuid.UUID,
+    current_user: User = Depends(require_roles("trainer", "admin")),
+    db: Session = Depends(get_db),
+) -> dict:
+    module = db.query(CourseModule).filter(CourseModule.id == module_id).first()
+    if not module:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Course module with ID '{module_id}' was not found.",
+        )
+
+    title = module.title
+    db.delete(module)
+    db.commit()
+
+    return {"message": f"Module '{title}' deleted successfully."}

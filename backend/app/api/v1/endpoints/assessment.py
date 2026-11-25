@@ -144,6 +144,20 @@ def get_assessment_catalogue(
         q_count = len(q_list)
         duration_est = max(10, q_count * 2)
 
+        # Requirement: The quizzes they see for any course should remain disabled or locked until they complete the course 100%
+        enrollment = db.query(Enrollment).filter(
+            Enrollment.user_id == current_user.id,
+            Enrollment.course_id == associated_course.id,
+        ).first()
+        course_prog = enrollment.progress_percentage if enrollment else 0
+        course_is_complete = (course_prog >= 100) or (enrollment.status == "completed" if enrollment else False)
+        quiz_is_locked = not course_is_complete
+        lock_msg = (
+            None
+            if course_is_complete
+            else f"Locked: Requires 100% course completion (current progress: {course_prog}%)."
+        )
+
         catalogue_items.append(
             AssessmentCatalogueItem(
                 id=quiz.id,
@@ -160,6 +174,10 @@ def get_assessment_catalogue(
                 last_attempt_score=last_attempt.score if last_attempt else None,
                 last_attempt_percentage=last_attempt.percentage if last_attempt else None,
                 last_attempt_passed=last_attempt.passed if last_attempt else None,
+                course_progress_percentage=course_prog,
+                course_completed=course_is_complete,
+                is_locked=quiz_is_locked,
+                lock_reason=lock_msg,
             )
         )
 

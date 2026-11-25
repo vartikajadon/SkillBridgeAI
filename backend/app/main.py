@@ -81,6 +81,8 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 
 
 @app.get("/", tags=["Health"])
+@app.get("/api", tags=["Health"])
+@app.get("/api/v1", tags=["Health"])
 async def root():
     """Root health check and metadata endpoint."""
     return {

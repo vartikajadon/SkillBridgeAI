@@ -19,3 +19,7 @@ except Exception as e:
     print(f"Serverless DB init notice: {e}")
 
 from app.main import app
+
+# Expose app at module level for ASGI/WSGI servers
+# Vercel's @vercel/python looks for 'app' or 'handler'
+handler = app

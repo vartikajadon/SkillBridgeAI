@@ -16,11 +16,13 @@ class Settings(BaseSettings):
         description="Runtime environment: development, testing, staging, production",
     )
 
-    # CORS settings
+    # CORS settings - allows localhost, all vercel deployments (*.vercel.app), and wildcards
     BACKEND_CORS_ORIGINS: Union[List[str], str] = [
         "http://localhost:5173",
         "http://127.0.0.1:5173",
         "http://localhost:3000",
+        "https://skill-bridge-ai-pi-nine.vercel.app",
+        "*",
     ]
 
     @field_validator("BACKEND_CORS_ORIGINS", mode="before")

@@ -67,11 +67,11 @@ app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 # Add Security Headers Middleware
 app.add_middleware(SecurityHeadersMiddleware)
 
-# CORS Middleware
+# CORS Middleware: allow_origin_regex allows any vercel.app frontend preview or production domain
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[str(origin) for origin in settings.BACKEND_CORS_ORIGINS],
-    allow_credentials=True,
+    allow_origins=["*"],
+    allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
 )

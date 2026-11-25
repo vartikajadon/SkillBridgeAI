@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
 import { Session, User as SupabaseUser } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabaseClient';
+import { apiUrl, getApiBaseUrl } from '../lib/api';
 
 export interface UserProfile {
   id: string;
@@ -60,7 +61,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const response = await fetch('/api/v1/auth/me', {
+      const response = await fetch(apiUrl('/api/v1/auth/me'), {
         headers: {
           Authorization: `Bearer ${currentSession.access_token}`,
         },
@@ -156,7 +157,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // 2. Local mock login fallback (for offline/local development without Supabase)
     try {
-      const res = await fetch('/api/v1/auth/mock-login', {
+      const res = await fetch(apiUrl('/api/v1/auth/mock-login'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -170,7 +171,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return {
             error: new Error(
               errJson?.detail ||
-                `Backend server unreachable (HTTP ${res.status}). Please make sure FastAPI backend is running on http://127.0.0.1:8000.`
+                `Backend server unreachable (HTTP ${res.status}).`
             ),
           };
         }
@@ -204,9 +205,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setProfileIncomplete(false);
       return { error: null };
     } catch (err: unknown) {
+      const activeBase = getApiBaseUrl();
+      const targetHint = activeBase ? activeBase : 'http://127.0.0.1:8000';
       return {
         error: new Error(
-          'Cannot connect to backend server at http://127.0.0.1:8000. Please start the backend in a terminal with: python -m uvicorn app.main:app --port 8000'
+          `Cannot connect to backend server at ${targetHint}. Please verify that the backend is running and that VITE_API_URL is configured in your deployment settings.`
         ),
       };
     }
@@ -218,7 +221,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const response = await fetch('/api/v1/auth/profile', {
+      const response = await fetch(apiUrl('/api/v1/auth/profile'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -271,7 +274,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Direct registration API
     try {
-      const res = await fetch('/api/v1/auth/register', {
+      const res = await fetch(apiUrl('/api/v1/auth/register'), {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -329,7 +332,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     try {
-      const response = await fetch('/api/v1/auth/me', {
+      const response = await fetch(apiUrl('/api/v1/auth/me'), {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

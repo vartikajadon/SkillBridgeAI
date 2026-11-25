@@ -111,6 +111,19 @@ class LearningPathResponse(BaseModel):
 # 4. Enrollment Action Schemas
 # -----------------------------------------------------------------------------
 
+class ModuleCompleteResponse(BaseModel):
+    course_id: uuid.UUID
+    module_number: int
+    is_completed: bool
+    completed_modules_count: int
+    total_modules_count: int
+    progress_percentage: int
+    course_status: str
+    message: str
+
+    model_config = ConfigDict(extra="forbid", from_attributes=True)
+
+
 class EnrollmentCreateResponse(BaseModel):
     enrollment_id: uuid.UUID
     course_id: uuid.UUID

@@ -72,6 +72,17 @@ export interface LearningPathResponse {
   steps: LearningPathStepItem[];
 }
 
+export interface ModuleCompleteResponse {
+  course_id: string;
+  module_number: number;
+  is_completed: boolean;
+  completed_modules_count: number;
+  total_modules_count: number;
+  progress_percentage: number;
+  course_status: string;
+  message: string;
+}
+
 export interface EnrollmentCreateResponse {
   enrollment_id: string;
   course_id: string;

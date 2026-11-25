@@ -295,6 +295,43 @@ export const RecommendationList: React.FC<Props> = ({
         onClose={() => setSelectedCourseForDetails(null)}
         onEnroll={handleEnroll}
         isEnrolling={enrollingCourseId === selectedCourseForDetails?.course_id}
+        sessionToken={sessionToken}
+        onModuleCompleted={(courseId, updatedProgress, updatedStatus, updatedModules) => {
+          // Update recommendation list state across the page
+          setData((prev) => {
+            if (!prev) return prev;
+            const updated = prev.recommendations.map((r) => {
+              if (r.course_id === courseId) {
+                return {
+                  ...r,
+                  is_enrolled: true,
+                  enrollment_status: updatedStatus,
+                  progress_percentage: updatedProgress,
+                  modules: updatedModules,
+                };
+              }
+              return r;
+            });
+            return { ...prev, recommendations: updated };
+          });
+
+          // Also update currently open modal state
+          setSelectedCourseForDetails((prev) => {
+            if (!prev || prev.course_id !== courseId) return prev;
+            return {
+              ...prev,
+              is_enrolled: true,
+              enrollment_status: updatedStatus,
+              progress_percentage: updatedProgress,
+              modules: updatedModules,
+            };
+          });
+
+          // Trigger portal-wide refresh (e.g. Learning Path, Assessments, Dashboard)
+          if (onEnrollmentSuccess) {
+            onEnrollmentSuccess();
+          }
+        }}
       />
 
       {/* Explanation Modal */}

@@ -17,6 +17,7 @@ from app.schemas.recommendation import (
     CourseVideoModuleItem,
     EnrollmentCreateResponse,
     LearningPathResponse,
+    ModuleCompleteResponse,
 )
 from app.services.recommendation_engine import (
     generate_learning_path,
@@ -93,6 +94,90 @@ def get_course_modules(
     ).first()
     progress_pct = enrollment.progress_percentage if enrollment else None
     return get_course_video_modules(course, progress_pct)
+
+
+@router.post(
+    "/{course_id}/modules/{module_number}/complete",
+    response_model=ModuleCompleteResponse,
+    summary="Mark course module as complete and update progress",
+    description="Marks a module complete for the authenticated learner. If all modules are complete, marks course 100% completed.",
+)
+def complete_course_module(
+    course_id: uuid.UUID,
+    module_number: int,
+    current_user: User = Depends(require_roles("learner")),
+    db: Session = Depends(get_db),
+) -> ModuleCompleteResponse:
+    """Marks a specific module as complete, increments course progress percentage,
+    and updates course status to 'completed' (100%) when all 5 modules are done.
+    """
+    course = (
+        db.query(Course)
+        .filter(Course.id == course_id, Course.status == "published")
+        .first()
+    )
+    if not course:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Course with ID '{course_id}' not found.",
+        )
+
+    enrollment = (
+        db.query(Enrollment)
+        .filter(
+            Enrollment.user_id == current_user.id,
+            Enrollment.course_id == course_id,
+        )
+        .first()
+    )
+
+    # Auto-enroll if not enrolled yet
+    if not enrollment:
+        enrollment = Enrollment(
+            user_id=current_user.id,
+            course_id=course.id,
+            status="in_progress",
+            progress_percentage=0,
+            enrolled_at=datetime.now(timezone.utc),
+        )
+        db.add(enrollment)
+        db.commit()
+        db.refresh(enrollment)
+
+    # Get modules count
+    all_modules = get_course_video_modules(course, enrollment.progress_percentage)
+    total_modules = len(all_modules) or 5
+
+    # Each module is worth (100 / total_modules) %
+    # When completing module_number, progress is at least (module_number / total_modules) * 100
+    current_completed_count = int(round((enrollment.progress_percentage / 100.0) * total_modules))
+    new_completed_count = max(current_completed_count, module_number)
+    new_pct = int(round((new_completed_count / float(total_modules)) * 100))
+    new_pct = min(100, max(0, new_pct))
+
+    enrollment.progress_percentage = new_pct
+    if new_pct >= 100:
+        enrollment.status = "completed"
+        enrollment.completed_at = datetime.now(timezone.utc)
+    else:
+        enrollment.status = "in_progress"
+
+    db.commit()
+    db.refresh(enrollment)
+
+    return ModuleCompleteResponse(
+        course_id=course.id,
+        module_number=module_number,
+        is_completed=True,
+        completed_modules_count=new_completed_count,
+        total_modules_count=total_modules,
+        progress_percentage=enrollment.progress_percentage,
+        course_status=enrollment.status,
+        message=(
+            f"Congratulations! You have completed Module {module_number}. "
+            f"{'Course 100% completed!' if new_pct >= 100 else f'Course progress updated to {new_pct}%.'}"
+        ),
+    )
 
 
 # -----------------------------------------------------------------------------

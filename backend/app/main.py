@@ -78,3 +78,16 @@ app.add_middleware(
 
 # Include API v1 Router under /api/v1
 app.include_router(api_router, prefix=settings.API_V1_STR)
+
+
+@app.get("/", tags=["Health"])
+async def root():
+    """Root health check and metadata endpoint."""
+    return {
+        "status": "online",
+        "service": settings.PROJECT_NAME,
+        "version": settings.VERSION,
+        "docs": f"{settings.API_V1_STR}/docs",
+        "health": f"{settings.API_V1_STR}/health",
+    }
+

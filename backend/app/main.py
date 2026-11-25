@@ -49,6 +49,13 @@ async def lifespan(app: FastAPI):
     # Ensure database schema is up-to-date (including custom course_modules)
     try:
         Base.metadata.create_all(bind=engine)
+        # Ensure all catalog courses are populated on startup / serverless cold starts
+        from app.db.session import SessionLocal
+        from app.models.course import Course
+        from app.db.seed import seed_database
+        with SessionLocal() as db:
+            if db.query(Course).count() < 17:
+                seed_database(db)
     except Exception as e:
         logger.warning(f"Database schema auto-creation notice: {e}")
 

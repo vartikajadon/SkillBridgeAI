@@ -841,9 +841,9 @@ def course_matches_learner_domain(course: Course, job_role: Optional[JobRole]) -
     c_title = (course.title or "").upper()
     c_desc = (course.description or "").upper()
 
-    is_da_course = "-DA" in c_code or "DATA ANALYST" in c_desc or "DATA ANALYST" in c_title or "STATISTICS" in c_title
-    is_ba_course = "-BA" in c_code or "BUSINESS ANALYST" in c_desc or "BUSINESS ANALYST" in c_title or "PROCESS RE-ENGINEERING" in c_title or "REQUIREMENTS ENGINEERING" in c_title
-    is_fa_course = "-FA" in c_code or "FINANCE ASSISTANT" in c_desc or "FINANCE ASSISTANT" in c_title or "FINANCIAL MANAGEMENT" in c_title or "PFMS" in c_title
+    is_da_course = "-DA" in c_code
+    is_ba_course = "-BA" in c_code
+    is_fa_course = "-FA" in c_code
 
     if "DATA" in role_code or "DATA" in role_title:
         return is_da_course

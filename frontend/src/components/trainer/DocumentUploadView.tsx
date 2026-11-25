@@ -331,36 +331,63 @@ export const DocumentUploadView: React.FC<Props> = ({
         <form onSubmit={handleCreateModule} className="space-y-6">
           {/* STEP A: SELECT COURSE FIRST */}
           <div className="bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800/80 rounded-xl p-4 space-y-3">
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5">
               <label className="text-xs font-bold text-slate-900 dark:text-white flex items-center space-x-1.5">
                 <BookOpen className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
                 <span>1. Select Course First *</span>
               </label>
-              {selectedCourse && (
-                <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-cyan-100 text-cyan-800 dark:bg-cyan-950 dark:text-cyan-300 font-mono font-medium">
-                  {selectedCourse.code} • {selectedCourse.duration_hours}h Course
+              <div className="flex items-center space-x-2">
+                <span className="text-[11px] px-2 py-0.5 rounded-full bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-mono font-medium">
+                  {courses.length} Available Courses
                 </span>
-              )}
+                {selectedCourse && (
+                  <span className="text-[11px] px-2.5 py-0.5 rounded-full bg-cyan-100 text-cyan-800 dark:bg-cyan-950 dark:text-cyan-300 font-mono font-medium border border-cyan-200 dark:border-cyan-800">
+                    {selectedCourse.code} • {selectedCourse.duration_hours}h
+                  </span>
+                )}
+              </div>
             </div>
 
             <select
               value={selectedCourseId}
               onChange={(e) => setSelectedCourseId(e.target.value)}
-              disabled={isSubmitting || courses.length === 0}
-              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white font-medium focus:outline-none focus:border-cyan-500 transition"
+              disabled={isSubmitting || loading}
+              className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white font-medium focus:outline-none focus:border-cyan-500 shadow-sm transition"
             >
-              {courses.map((c) => (
-                <option key={c.id} value={c.id}>
-                  [{c.code}] {c.title} — {c.provider} ({c.status})
-                </option>
-              ))}
+              <option value="">-- Choose from all {courses.length} available courses in catalog --</option>
+              {courses
+                .slice()
+                .sort((a, b) => a.code.localeCompare(b.code))
+                .map((c) => (
+                  <option key={c.id} value={c.id}>
+                    [{c.code}] {c.title} — {c.provider} ({c.duration_hours}h, {c.status})
+                  </option>
+                ))}
             </select>
 
-            {selectedCourse?.description && (
-              <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2">
-                {selectedCourse.description}
-              </p>
-            )}
+            {selectedCourse ? (
+              <div className="p-2.5 bg-white dark:bg-slate-900/80 rounded-lg border border-slate-200 dark:border-slate-800/80 space-y-1">
+                <div className="flex flex-wrap items-center gap-2 text-[11px] text-slate-600 dark:text-slate-400">
+                  <span className="font-semibold text-slate-900 dark:text-white">Provider:</span>
+                  <span>{selectedCourse.provider}</span>
+                  <span>•</span>
+                  <span className="font-semibold text-slate-900 dark:text-white">Duration:</span>
+                  <span>{selectedCourse.duration_hours} Hours</span>
+                  {selectedCourse.target_role && (
+                    <>
+                      <span>•</span>
+                      <span className="font-semibold text-slate-900 dark:text-white">Target Domain:</span>
+                      <span className="text-cyan-600 dark:text-cyan-400 font-medium">{selectedCourse.target_role}</span>
+                    </>
+                  )}
+                </div>
+                {selectedCourse.description && (
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 pt-0.5">
+                    {selectedCourse.description}
+                  </p>
+                )}
+              </div>
+            ) : null}
           </div>
 
           {/* STEP B: MODULE TITLE, DESCRIPTION & DURATION */}

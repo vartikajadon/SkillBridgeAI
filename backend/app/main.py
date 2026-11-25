@@ -6,7 +6,6 @@ import os
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.util import get_remote_address
@@ -60,7 +59,10 @@ async def lifespan(app: FastAPI):
         logger.warning(f"Database schema auto-creation notice: {e}")
 
     # Validate provider configuration on startup without exposing secrets
-    validate_rag_providers_for_environment(settings)
+    try:
+        validate_rag_providers_for_environment(settings)
+    except Exception as e:
+        logger.warning(f"RAG provider validation notice: {e}")
     logger.info(
         f"SkillBridge AI startup: environment={settings.ENVIRONMENT}, "
         f"embedding_provider={settings.EMBEDDING_PROVIDER}, rag_provider={settings.RAG_LLM_PROVIDER}"
@@ -93,20 +95,28 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Static Storage for uploaded video modules & materials
-# On serverless platforms (e.g. Vercel) filesystem is read-only except /tmp
-is_vercel = bool(
-    os.environ.get("VERCEL")
-    or os.environ.get("VERCEL_ENV")
-    or os.environ.get("AWS_LAMBDA_FUNCTION_NAME")
-)
-storage_dir = "/tmp/storage" if is_vercel else os.path.join(os.getcwd(), "storage")
-try:
-    os.makedirs(os.path.join(storage_dir, "videos"), exist_ok=True)
-    os.makedirs(os.path.join(storage_dir, "documents"), exist_ok=True)
-    app.mount("/storage", StaticFiles(directory=storage_dir), name="storage")
-except Exception as e:
-    logger.warning(f"Static storage mount notice: {e}")
+# Storage file retrieval endpoint (replaces StaticFiles to guarantee crash-free serverless execution)
+@app.get("/storage/{file_path:path}", tags=["Storage"])
+async def get_storage_file(file_path: str):
+    from fastapi.responses import FileResponse
+    from fastapi import HTTPException
+    is_vercel = bool(
+        os.environ.get("VERCEL")
+        or os.environ.get("VERCEL_ENV")
+        or os.environ.get("AWS_LAMBDA_FUNCTION_NAME")
+    )
+    search_dirs = [
+        "/tmp/storage",
+        os.path.join(os.getcwd(), "storage"),
+    ] if is_vercel else [
+        os.path.join(os.getcwd(), "storage"),
+        "/tmp/storage",
+    ]
+    for s_dir in search_dirs:
+        candidate = os.path.join(s_dir, file_path)
+        if os.path.isfile(candidate):
+            return FileResponse(candidate)
+    raise HTTPException(status_code=404, detail="File not found")
 
 # Include API v1 Router under /api/v1
 app.include_router(api_router, prefix=settings.API_V1_STR)

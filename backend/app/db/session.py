@@ -2,6 +2,7 @@
 Database Session Management
 Provides SQLAlchemy engine, session maker, and FastAPI dependency.
 """
+import os
 from pathlib import Path
 from typing import Generator
 from sqlalchemy import create_engine
@@ -14,11 +15,16 @@ db_url = settings.DATABASE_URL
 if db_url.startswith("postgresql://"):
     db_url = db_url.replace("postgresql://", "postgresql+psycopg://", 1)
 
+# On serverless platforms (e.g. Vercel) filesystem is read-only except /tmp
+is_vercel = bool(os.environ.get("VERCEL"))
+
 connect_args = {}
 if db_url.startswith("sqlite"):
     connect_args = {"check_same_thread": False}
-    # Ensure relative SQLite path always resolves to backend directory
-    if db_url.startswith("sqlite:///./") or db_url.startswith("sqlite:////./"):
+    if is_vercel:
+        # Route SQLite database to /tmp on serverless environments
+        db_url = "sqlite:////tmp/skillbridge.db"
+    elif db_url.startswith("sqlite:///./") or db_url.startswith("sqlite:////./"):
         prefix = "sqlite:///./" if db_url.startswith("sqlite:///./") else "sqlite:////./"
         rel_path = db_url[len(prefix):]
         backend_dir = Path(__file__).resolve().parent.parent.parent

@@ -57,8 +57,8 @@ class Settings(BaseSettings):
         description="Expected JWT audience (aud) claim from Supabase Auth",
     )
     DATABASE_URL: str = Field(
-        default="postgresql+psycopg://postgres:placeholder_password@db.placeholder-project.supabase.co:5432/postgres",
-        description="PostgreSQL / pgvector connection URL placeholder",
+        default="sqlite:///./skillbridge.db",
+        description="Database connection URL (defaults to local SQLite if DATABASE_URL is not set)",
     )
 
     # LLM Provider Placeholders

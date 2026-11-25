@@ -833,7 +833,13 @@ async def upload_course_learning_module(
         if len(video_bytes) > 0:
             clean_video_name = sanitize_filename(video_file.filename)
             vid_id = uuid.uuid4().hex[:10]
-            storage_videos_dir = os.path.join(os.getcwd(), "storage", "videos")
+            is_vercel = bool(
+                os.environ.get("VERCEL")
+                or os.environ.get("VERCEL_ENV")
+                or os.environ.get("AWS_LAMBDA_FUNCTION_NAME")
+            )
+            storage_base = "/tmp/storage" if is_vercel else os.path.join(os.getcwd(), "storage")
+            storage_videos_dir = os.path.join(storage_base, "videos")
             os.makedirs(storage_videos_dir, exist_ok=True)
             saved_filename = f"{vid_id}_{clean_video_name}"
             vid_path = os.path.join(storage_videos_dir, saved_filename)

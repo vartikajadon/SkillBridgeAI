@@ -13,8 +13,10 @@ try:
     from app.db.session import engine, SessionLocal
     Base.metadata.create_all(bind=engine)
     with SessionLocal() as db_session:
+        from app.models.course import Course
         from app.db.seed import seed_database
-        seed_database(db_session)
+        if db_session.query(Course).count() < 17:
+            seed_database(db_session)
 except Exception as e:
     print(f"Serverless DB init notice: {e}")
 

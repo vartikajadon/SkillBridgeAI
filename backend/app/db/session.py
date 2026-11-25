@@ -16,7 +16,11 @@ if db_url.startswith("postgresql://"):
     db_url = db_url.replace("postgresql://", "postgresql+psycopg://", 1)
 
 # On serverless platforms (e.g. Vercel) filesystem is read-only except /tmp
-is_vercel = bool(os.environ.get("VERCEL"))
+is_vercel = bool(
+    os.environ.get("VERCEL")
+    or os.environ.get("VERCEL_ENV")
+    or os.environ.get("AWS_LAMBDA_FUNCTION_NAME")
+)
 
 connect_args = {}
 if db_url.startswith("sqlite"):

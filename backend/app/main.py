@@ -94,10 +94,19 @@ app.add_middleware(
 )
 
 # Static Storage for uploaded video modules & materials
-storage_dir = os.path.join(os.getcwd(), "storage")
-os.makedirs(os.path.join(storage_dir, "videos"), exist_ok=True)
-os.makedirs(os.path.join(storage_dir, "documents"), exist_ok=True)
-app.mount("/storage", StaticFiles(directory=storage_dir), name="storage")
+# On serverless platforms (e.g. Vercel) filesystem is read-only except /tmp
+is_vercel = bool(
+    os.environ.get("VERCEL")
+    or os.environ.get("VERCEL_ENV")
+    or os.environ.get("AWS_LAMBDA_FUNCTION_NAME")
+)
+storage_dir = "/tmp/storage" if is_vercel else os.path.join(os.getcwd(), "storage")
+try:
+    os.makedirs(os.path.join(storage_dir, "videos"), exist_ok=True)
+    os.makedirs(os.path.join(storage_dir, "documents"), exist_ok=True)
+    app.mount("/storage", StaticFiles(directory=storage_dir), name="storage")
+except Exception as e:
+    logger.warning(f"Static storage mount notice: {e}")
 
 # Include API v1 Router under /api/v1
 app.include_router(api_router, prefix=settings.API_V1_STR)

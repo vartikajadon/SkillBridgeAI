@@ -188,12 +188,22 @@ def process_and_store_document(
 
     # 3. Secure disk storage
     doc_id = uuid.uuid4()
-    os.makedirs(storage_dir, exist_ok=True)
+    is_vercel = bool(
+        os.environ.get("VERCEL")
+        or os.environ.get("VERCEL_ENV")
+        or os.environ.get("AWS_LAMBDA_FUNCTION_NAME")
+    )
+    effective_storage_dir = os.path.join("/tmp", storage_dir) if (is_vercel and not storage_dir.startswith("/tmp")) else storage_dir
     stored_filename = f"{doc_id}_{clean_name}"
-    file_path = os.path.join(storage_dir, stored_filename)
+    file_path = os.path.join(effective_storage_dir, stored_filename)
 
-    with open(file_path, "wb") as f:
-        f.write(file_bytes)
+    try:
+        os.makedirs(effective_storage_dir, exist_ok=True)
+        with open(file_path, "wb") as f:
+            f.write(file_bytes)
+    except Exception:
+        # On read-only serverless filesystems, continue gracefully
+        pass
 
     # 4. Create TrainingDocument record
     doc = TrainingDocument(

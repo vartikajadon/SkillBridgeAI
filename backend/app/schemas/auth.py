@@ -22,7 +22,7 @@ class ProfileCreateRequest(BaseModel):
 
 class UserRegisterRequest(BaseModel):
     """Self-service registration request for new Learner accounts."""
-    email: EmailStr = Field(..., description="Government/Civil service email address")
+    email: str = Field(..., pattern=r"^[^@\s]+@[^@\s]+\.[^@\s]+$", description="Government/Civil service email address")
     password: Optional[str] = Field(None, min_length=6, description="Account password")
     full_name: str = Field(..., min_length=2, max_length=255, description="Full legal name")
     department: Optional[str] = Field(None, max_length=255, description="Ministry or Department")

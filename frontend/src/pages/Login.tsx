@@ -2,48 +2,67 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
+  AlertCircle,
+  ArrowRight,
   Cpu,
+  GraduationCap,
+  Loader2,
   Lock,
   Mail,
-  AlertCircle,
-  Loader2,
+  ShieldCheck,
   Sparkles,
   UserCheck,
-  ShieldCheck,
-  GraduationCap,
 } from 'lucide-react';
 import { ThemeToggle } from '../components/ThemeToggle';
 
 const MOCK_ACCOUNTS = [
   {
     role: 'Civil Service Learner',
-    name: 'Amit Patel (Statistical Assistant)',
+    badge: 'Learner',
+    name: 'Amit Patel',
+    designation: 'Statistical Assistant',
     email: 'learner.patel@skillbridge.gov.in',
     portal: '/learner',
-    color: 'emerald',
-    badge: 'bg-emerald-950 text-emerald-300 border-emerald-800',
-    btnColor: 'bg-emerald-900/40 hover:bg-emerald-800/60 border-emerald-700/60 text-emerald-200',
     icon: UserCheck,
+    theme: {
+      card: 'bg-white dark:bg-slate-900/90 border-emerald-200 dark:border-emerald-900/60 hover:border-emerald-500 dark:hover:border-emerald-500 hover:shadow-md hover:shadow-emerald-500/10',
+      iconBg: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300/60 dark:border-emerald-800',
+      badge: 'bg-emerald-50 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800',
+      email: 'text-emerald-700 dark:text-emerald-400',
+      btn: 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-sm shadow-emerald-600/30',
+    },
   },
   {
     role: 'Master Trainer / Faculty',
-    name: 'Dr. Sunita Sharma (Faculty Member)',
+    badge: 'Faculty',
+    name: 'Dr. Sunita Sharma',
+    designation: 'Curriculum & Assessments',
     email: 'trainer.sharma@skillbridge.gov.in',
     portal: '/trainer',
-    color: 'cyan',
-    badge: 'bg-cyan-950 text-cyan-300 border-cyan-800',
-    btnColor: 'bg-cyan-900/40 hover:bg-cyan-800/60 border-cyan-700/60 text-cyan-200',
     icon: GraduationCap,
+    theme: {
+      card: 'bg-white dark:bg-slate-900/90 border-cyan-200 dark:border-cyan-900/60 hover:border-cyan-500 dark:hover:border-cyan-500 hover:shadow-md hover:shadow-cyan-500/10',
+      iconBg: 'bg-cyan-100 text-cyan-700 dark:bg-cyan-950 dark:text-cyan-300 border border-cyan-300/60 dark:border-cyan-800',
+      badge: 'bg-cyan-50 text-cyan-800 border-cyan-300 dark:bg-cyan-950 dark:text-cyan-300 dark:border-cyan-800',
+      email: 'text-cyan-700 dark:text-cyan-400',
+      btn: 'bg-cyan-600 hover:bg-cyan-500 text-white shadow-sm shadow-cyan-600/30',
+    },
   },
   {
     role: 'System Administrator',
-    name: 'Rajesh Kumar (Director, DoPT)',
+    badge: 'Director / DoPT',
+    name: 'Rajesh Kumar',
+    designation: 'Capacity Building & Governance',
     email: 'admin@skillbridge.gov.in',
     portal: '/admin',
-    color: 'indigo',
-    badge: 'bg-indigo-950 text-indigo-300 border-indigo-800',
-    btnColor: 'bg-indigo-900/40 hover:bg-indigo-800/60 border-indigo-700/60 text-indigo-200',
     icon: ShieldCheck,
+    theme: {
+      card: 'bg-white dark:bg-slate-900/90 border-indigo-200 dark:border-indigo-900/60 hover:border-indigo-500 dark:hover:border-indigo-500 hover:shadow-md hover:shadow-indigo-500/10',
+      iconBg: 'bg-indigo-100 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 border border-indigo-300/60 dark:border-indigo-800',
+      badge: 'bg-indigo-50 text-indigo-800 border-indigo-300 dark:bg-indigo-950 dark:text-indigo-300 dark:border-indigo-800',
+      email: 'text-indigo-700 dark:text-indigo-400',
+      btn: 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-sm shadow-indigo-600/30',
+    },
   },
 ];
 
@@ -52,6 +71,7 @@ export const Login: React.FC = () => {
   const [password, setPassword] = useState('');
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [activeQuickEmail, setActiveQuickEmail] = useState<string | null>(null);
 
   const { login } = useAuth();
   const navigate = useNavigate();
@@ -78,6 +98,7 @@ export const Login: React.FC = () => {
       setErrorMsg(err instanceof Error ? err.message : 'An unexpected error occurred.');
     } finally {
       setIsSubmitting(false);
+      setActiveQuickEmail(null);
     }
   };
 
@@ -87,6 +108,7 @@ export const Login: React.FC = () => {
   };
 
   const handleQuickLogin = (mockEmail: string) => {
+    setActiveQuickEmail(mockEmail);
     setEmail(mockEmail);
     setPassword('password123');
     handleLoginWithEmail(mockEmail, 'password123');
@@ -113,32 +135,74 @@ export const Login: React.FC = () => {
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
         <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 py-8 px-6 shadow-xl dark:shadow-2xl rounded-2xl sm:px-10 space-y-6">
           {/* Quick Mock Credentials Selector */}
-          <div className="p-4 bg-slate-50 dark:bg-slate-950/80 border border-indigo-100 dark:border-indigo-900/60 rounded-xl space-y-3">
-            <div className="flex items-center space-x-2 text-indigo-600 dark:text-indigo-400 text-xs font-bold uppercase tracking-wider">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Quick Mock Logins (Click to Test)</span>
+          <div className="p-4 sm:p-5 bg-gradient-to-b from-slate-50 to-indigo-50/20 dark:from-slate-950 dark:to-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl space-y-3.5 shadow-sm">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2 text-indigo-600 dark:text-indigo-400 text-xs font-bold uppercase tracking-wider">
+                <Sparkles className="w-3.5 h-3.5" />
+                <span>Quick Test Credentials</span>
+              </div>
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 dark:bg-indigo-950 dark:text-indigo-300 border border-indigo-200 dark:border-indigo-800">
+                1-Click Sign-In
+              </span>
             </div>
-            <div className="space-y-2">
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              Select any civil service persona below to automatically sign in and explore that role:
+            </p>
+
+            <div className="space-y-2.5">
               {MOCK_ACCOUNTS.map((acc) => {
                 const Icon = acc.icon;
+                const isLoggingThis = isSubmitting && activeQuickEmail === acc.email;
+
                 return (
                   <button
                     key={acc.email}
                     type="button"
                     onClick={() => handleQuickLogin(acc.email)}
                     disabled={isSubmitting}
-                    className={`w-full p-2.5 rounded-lg border text-left transition flex items-center justify-between text-xs ${acc.btnColor}`}
+                    className={`w-full group p-3 rounded-xl border text-left transition-all duration-200 flex items-center justify-between gap-3 ${acc.theme.card}`}
                   >
-                    <div className="flex items-center space-x-2.5 min-w-0">
-                      <Icon className="w-4 h-4 shrink-0" />
-                      <div className="truncate">
-                        <div className="font-semibold text-white truncate">{acc.role}</div>
-                        <div className="text-[11px] opacity-80 truncate">{acc.email}</div>
+                    <div className="flex items-center space-x-3 min-w-0">
+                      <div className={`w-9 h-9 rounded-xl flex items-center justify-center shrink-0 transition-transform group-hover:scale-105 ${acc.theme.iconBg}`}>
+                        <Icon className="w-4 h-4" />
+                      </div>
+                      <div className="min-w-0">
+                        <div className="flex items-center space-x-1.5 flex-wrap">
+                          <span className="font-bold text-slate-900 dark:text-white text-xs truncate">
+                            {acc.role}
+                          </span>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded-md font-semibold border ${acc.theme.badge}`}>
+                            {acc.badge}
+                          </span>
+                        </div>
+                        <div className="text-[11px] text-slate-600 dark:text-slate-300 truncate">
+                          {acc.name} • <span className="opacity-80">{acc.designation}</span>
+                        </div>
+                        <div className={`text-[10px] font-mono truncate font-medium ${acc.theme.email}`}>
+                          {acc.email}
+                        </div>
                       </div>
                     </div>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full font-medium shrink-0 bg-slate-950/60 border border-white/10 ml-2">
-                      Sign In →
-                    </span>
+
+                    <div className="shrink-0 flex items-center">
+                      <span
+                        className={`text-[11px] font-semibold px-3 py-1.5 rounded-lg flex items-center space-x-1 transition-all ${acc.theme.btn} ${
+                          isSubmitting && !isLoggingThis ? 'opacity-40' : ''
+                        }`}
+                      >
+                        {isLoggingThis ? (
+                          <>
+                            <Loader2 className="w-3 h-3 animate-spin" />
+                            <span>Connecting...</span>
+                          </>
+                        ) : (
+                          <>
+                            <span>Sign In</span>
+                            <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+                          </>
+                        )}
+                      </span>
+                    </div>
                   </button>
                 );
               })}

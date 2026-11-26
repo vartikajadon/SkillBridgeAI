@@ -153,6 +153,14 @@ export const DocumentUploadView: React.FC<Props> = ({
   const handleDocFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      if (file.size > 10 * 1024 * 1024) {
+        setSubmitError(
+          `Document file size (${(file.size / (1024 * 1024)).toFixed(1)} MB) exceeds maximum upload limit (10 MB). Please choose a smaller document.`
+        );
+        e.target.value = '';
+        setSelectedDocFile(null);
+        return;
+      }
       setSelectedDocFile(file);
       if (!moduleTitle) {
         setModuleTitle(file.name.replace(/\.[^/.]+$/, '').replace(/_/g, ' '));
@@ -164,6 +172,14 @@ export const DocumentUploadView: React.FC<Props> = ({
   const handleVideoFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
       const file = e.target.files[0];
+      if (file.size > 4.2 * 1024 * 1024) {
+        setSubmitError(
+          `Video file size (${(file.size / (1024 * 1024)).toFixed(1)} MB) exceeds serverless payload limit (4.2 MB). Please provide a direct Video URL or choose a smaller sample clip.`
+        );
+        e.target.value = '';
+        setSelectedVideoFile(null);
+        return;
+      }
       setSelectedVideoFile(file);
       setSubmitError(null);
     }

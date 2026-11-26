@@ -17,11 +17,11 @@ import uuid
 from typing import Optional
 from sqlalchemy.orm import Session
 from app.db.session import SessionLocal, engine
-from app.models.base import Base
+from app.db.base import Base
 from app.models.user import User
 from app.models.job_role import JobRole
 from app.models.competency import Competency, RoleCompetency, LearnerCompetency
-from app.models.course import Course, CourseCompetency, Enrollment
+from app.models.course import Course, CourseCompetency, CourseModule, Enrollment
 from app.models.document import DocumentChunk, TrainingDocument
 from app.models.quiz import Quiz
 from app.models.audit import AuditLog
@@ -45,12 +45,11 @@ SEED_DOCUMENT_DA_ID = uuid.UUID("44444444-4444-4444-4444-444444444403")
 
 def seed_database(db: Optional[Session] = None) -> None:
     owns_session = False
+    if engine.dialect.name == "sqlite":
+        from app.db.base import Base as DBBase
+        DBBase.metadata.create_all(bind=engine)
+
     if db is None:
-        # Only auto-create tables for local SQLite development/testing databases.
-        # In PostgreSQL / Supabase, Alembic migrations ('alembic upgrade head') are the
-        # sole authoritative production schema mechanism to prevent version drift.
-        if engine.dialect.name == "sqlite":
-            Base.metadata.create_all(bind=engine)
         db = SessionLocal()
         owns_session = True
 
@@ -458,10 +457,13 @@ def seed_database(db: Optional[Session] = None) -> None:
             print(f"  [-] Removed Obsolete Course: {oc.title} ({oc.code})")
         db.flush()
 
+        COURSE_NAMESPACE = uuid.UUID("6ba7b810-9dad-11d1-80b4-00c04fd430c8")
         for c_data in courses_data:
-            course = db.query(Course).filter(Course.code == c_data["code"]).first()
+            course_uuid = uuid.uuid5(COURSE_NAMESPACE, f"skillbridge.course.{c_data['code']}")
+            course = db.query(Course).filter((Course.code == c_data["code"]) | (Course.id == course_uuid)).first()
             if not course:
                 course = Course(
+                    id=course_uuid,
                     code=c_data["code"],
                     title=c_data["title"],
                     provider=c_data["provider"],
@@ -477,6 +479,7 @@ def seed_database(db: Optional[Session] = None) -> None:
                 course.provider = c_data["provider"]
                 course.duration_hours = c_data["duration_hours"]
                 course.description = c_data["description"]
+                course.status = "published"
 
             # Map competencies
             for comp_code, achieved_level in c_data["mappings"]:

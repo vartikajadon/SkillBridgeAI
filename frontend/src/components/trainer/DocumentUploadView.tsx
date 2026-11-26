@@ -88,9 +88,22 @@ export const DocumentUploadView: React.FC<Props> = ({
 
       if (coursesRes.ok) {
         const cData: TrainerCourseItem[] = await coursesRes.json();
-        setCourses(cData);
-        if (cData.length > 0 && !selectedCourseId) {
-          setSelectedCourseId(cData[0].id);
+        // Show only active, available official iGOT curriculum courses (omit obsolete unlinked courses)
+        const activeCourses = cData.filter(
+          (c) =>
+            c.code.startsWith('CRS-IGOT-') ||
+            (c.status === 'published' &&
+              !c.code.startsWith('CRS-STAT-') &&
+              !c.code.startsWith('CRS-SQL-') &&
+              !c.code.startsWith('CRS-VIZ-') &&
+              !c.code.startsWith('CRS-SRV-') &&
+              !c.code.startsWith('CRS-ETH-') &&
+              !c.code.startsWith('CRS-POL-') &&
+              !c.code.startsWith('CRS-AI-'))
+        );
+        setCourses(activeCourses);
+        if (activeCourses.length > 0 && !selectedCourseId) {
+          setSelectedCourseId(activeCourses[0].id);
         }
       }
 
@@ -370,13 +383,13 @@ export const DocumentUploadView: React.FC<Props> = ({
               disabled={isSubmitting || loading}
               className="w-full bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-xl px-3.5 py-2.5 text-xs text-slate-900 dark:text-white font-medium focus:outline-none focus:border-cyan-500 shadow-sm transition"
             >
-              <option value="">-- Choose from all {courses.length} available courses in catalog --</option>
+              <option value="">-- Select an available course from catalog --</option>
               {courses
                 .slice()
                 .sort((a, b) => a.code.localeCompare(b.code))
                 .map((c) => (
                   <option key={c.id} value={c.id}>
-                    [{c.code}] {c.title} — {c.provider} ({c.duration_hours}h, {c.status})
+                    [{c.code}] {c.title} — {c.provider} ({c.duration_hours}h)
                   </option>
                 ))}
             </select>

@@ -53,7 +53,7 @@ async def lifespan(app: FastAPI):
         from app.models.course import Course
         from app.db.seed import seed_database
         with SessionLocal() as db:
-            if db.query(Course).count() < 17:
+            if db.query(Course).count() < 5:
                 seed_database(db)
     except Exception as e:
         logger.warning(f"Database schema auto-creation notice: {e}")

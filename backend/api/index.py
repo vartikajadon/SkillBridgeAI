@@ -15,7 +15,7 @@ try:
     with SessionLocal() as db_session:
         from app.models.course import Course
         from app.db.seed import seed_database
-        if db_session.query(Course).count() < 17:
+        if db_session.query(Course).count() < 5:
             seed_database(db_session)
 except Exception as e:
     print(f"Serverless DB init notice: {e}")

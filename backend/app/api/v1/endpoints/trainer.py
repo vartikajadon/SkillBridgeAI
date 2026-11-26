@@ -768,7 +768,7 @@ def list_course_modules_for_trainer(
 
     if not course:
         # Check if database catalog courses need seeding
-        if db.query(Course).count() < 17:
+        if db.query(Course).count() < 5:
             try:
                 from app.db.seed import seed_database
                 seed_database(db)
@@ -856,7 +856,7 @@ async def upload_course_learning_module(
 
     if not course:
         # Check if database catalog courses need seeding
-        if db.query(Course).count() < 17:
+        if db.query(Course).count() < 5:
             try:
                 from app.db.seed import seed_database
                 seed_database(db)

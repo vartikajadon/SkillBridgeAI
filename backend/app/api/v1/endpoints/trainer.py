@@ -833,6 +833,7 @@ async def upload_course_learning_module(
     course_id: str = Form(...),
     title: str = Form(...),
     description: Optional[str] = Form(None),
+    content: Optional[str] = Form(None),
     duration_minutes: int = Form(20),
     skills: Optional[str] = Form(None),
     document_file: Optional[UploadFile] = File(None),
@@ -901,9 +902,9 @@ async def upload_course_learning_module(
                 vf.write(video_bytes)
             final_video_url = f"/storage/videos/{saved_filename}"
 
-    # 3. Process learning material document if uploaded
+    # 3. Process learning material document or direct content
     doc_obj = None
-    module_content = None
+    module_content = content.strip() if content and content.strip() else None
     if document_file and document_file.filename:
         doc_bytes = await document_file.read()
         if len(doc_bytes) > 0:
@@ -921,7 +922,11 @@ async def upload_course_learning_module(
 
                 # Extract content preview / markdown text
                 if chunks:
-                    module_content = "\n\n".join([c.chunk_text for c in chunks[:5]])
+                    doc_text = "\n\n".join([c.chunk_text for c in chunks[:5]])
+                    if module_content:
+                        module_content = f"{module_content}\n\n#### Extracted Reference Notes:\n{doc_text}"
+                    else:
+                        module_content = doc_text
 
                 try:
                     embed_document_chunks(db, doc_obj.id)

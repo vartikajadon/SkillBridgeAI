@@ -18,6 +18,8 @@ export interface CourseVideoModuleItem {
   video_url?: string | null;
   is_completed?: boolean;
   content?: string | null;
+  skills_covered?: string[] | null;
+  is_custom?: boolean;
 }
 
 export interface CourseRecommendationItem {

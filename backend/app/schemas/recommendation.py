@@ -35,6 +35,8 @@ class CourseVideoModuleItem(BaseModel):
     video_url: Optional[str] = None
     is_completed: bool = False
     content: Optional[str] = None
+    skills_covered: Optional[List[str]] = None
+    is_custom: bool = False
 
     model_config = ConfigDict(extra="forbid", from_attributes=True)
 

@@ -5,12 +5,15 @@ import {
   ModuleCompleteResponse,
 } from '../../types/recommendation';
 import {
+  Award,
   BookOpen,
   Check,
   CheckCircle,
   Clock,
   Copy,
+  ExternalLink,
   FileText,
+  Film,
   Layers,
   Loader2,
   Play,
@@ -20,6 +23,25 @@ import {
   X,
   Zap,
 } from 'lucide-react';
+import { apiUrl } from '../../lib/api';
+
+const resolveVideoUrl = (rawUrl?: string | null): string => {
+  if (!rawUrl || !rawUrl.trim()) {
+    return 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4';
+  }
+  const clean = rawUrl.trim();
+  if (clean.startsWith('http://') || clean.startsWith('https://')) {
+    return clean;
+  }
+  return apiUrl(clean);
+};
+
+const getYouTubeEmbedUrl = (url: string): string | null => {
+  if (!url) return null;
+  const regExp = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+  const match = url.match(regExp);
+  return match && match[1] ? `https://www.youtube.com/embed/${match[1]}?autoplay=0&rel=0` : null;
+};
 
 interface Props {
   course: CourseRecommendationItem | null;
@@ -325,15 +347,22 @@ export const CourseDetailModal: React.FC<Props> = ({
 
               {moduleViewMode === 'material' ? (
                 <div className="space-y-3">
-                  <div className="flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
-                    <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center space-x-1.5">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-500 dark:text-slate-400">
+                    <div className="flex items-center space-x-2">
                       <BookOpen className="w-3.5 h-3.5 text-indigo-500" />
-                      <span>Curated Public Administration Reference Notes</span>
-                    </span>
+                      <span className="font-semibold text-slate-700 dark:text-slate-300">
+                        {activeModule.is_custom ? 'Faculty Curated Learning Notes & Syllabus' : 'Curated Public Administration Reference Notes'}
+                      </span>
+                      {activeModule.is_custom && (
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-cyan-100 text-cyan-800 dark:bg-cyan-950 dark:text-cyan-300 border border-cyan-300 dark:border-cyan-800">
+                          Trainer Content
+                        </span>
+                      )}
+                    </div>
                     <button
                       type="button"
                       onClick={handleCopyMaterial}
-                      className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium transition flex items-center space-x-1.5"
+                      className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 font-medium transition flex items-center space-x-1.5 self-start sm:self-auto"
                     >
                       {copied ? (
                         <>
@@ -349,24 +378,79 @@ export const CourseDetailModal: React.FC<Props> = ({
                     </button>
                   </div>
 
-                  <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-h-72 overflow-y-auto text-xs leading-relaxed text-slate-700 dark:text-slate-300 font-sans whitespace-pre-line space-y-2">
-                    {activeModule.content || activeModule.description}
+                  {activeModule.skills_covered && activeModule.skills_covered.length > 0 && (
+                    <div className="flex flex-wrap items-center gap-1.5 p-2 bg-indigo-50/60 dark:bg-indigo-950/40 rounded-xl border border-indigo-200 dark:border-indigo-900/60 text-xs">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-indigo-700 dark:text-indigo-300 flex items-center space-x-1 mr-1">
+                        <Award className="w-3 h-3 text-amber-500" />
+                        <span>Competencies Evaluated:</span>
+                      </span>
+                      {activeModule.skills_covered.map((skill) => (
+                        <span
+                          key={skill}
+                          className="text-[10px] font-semibold px-2 py-0.5 rounded bg-white dark:bg-slate-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-800"
+                        >
+                          {skill}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
+                  <div className="p-4 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl max-h-80 overflow-y-auto text-xs leading-relaxed text-slate-700 dark:text-slate-300 font-sans whitespace-pre-line space-y-2 select-text shadow-sm">
+                    {activeModule.content || activeModule.description || 'No written study text provided for this module.'}
                   </div>
                 </div>
               ) : (
                 <div className="space-y-3">
-                  <div className="relative rounded-2xl overflow-hidden bg-slate-950 border border-slate-200 dark:border-slate-800 aspect-video shadow-inner flex items-center justify-center">
-                    <video
-                      controls
-                      playsInline
-                      preload="metadata"
-                      className="w-full h-full object-cover rounded-2xl"
-                      poster=""
-                      src={activeModule.video_url || 'https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'}
-                    >
-                      Your browser does not support the video tag.
-                    </video>
-                  </div>
+                  {(() => {
+                    const vidUrl = resolveVideoUrl(activeModule.video_url);
+                    const ytEmbed = getYouTubeEmbedUrl(vidUrl);
+                    return (
+                      <>
+                        <div className="relative rounded-2xl overflow-hidden bg-slate-950 border border-slate-200 dark:border-slate-800 aspect-video shadow-inner flex items-center justify-center">
+                          {ytEmbed ? (
+                            <iframe
+                              src={ytEmbed}
+                              title={activeModule.title}
+                              className="w-full h-full rounded-2xl border-0"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowFullScreen
+                            />
+                          ) : (
+                            <video
+                              key={vidUrl}
+                              controls
+                              playsInline
+                              preload="metadata"
+                              className="w-full h-full object-cover rounded-2xl"
+                              src={vidUrl}
+                            >
+                              Your browser does not support HTML5 video streaming.
+                            </video>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap items-center justify-between gap-2 text-xs pt-1 px-1">
+                          <div className="flex items-center space-x-2 text-slate-500 dark:text-slate-400">
+                            <Film className="w-3.5 h-3.5 text-indigo-500" />
+                            <span>
+                              {activeModule.is_custom ? 'Trainer Uploaded Video Lecture' : 'iGOT Karmayogi Accredited Video Lesson'}
+                            </span>
+                            <span className="font-mono text-slate-400">({activeModule.duration_minutes} Mins)</span>
+                          </div>
+                          {activeModule.video_url && (
+                            <a
+                              href={vidUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline flex items-center space-x-1 font-medium"
+                            >
+                              <span>Open Video in New Tab</span>
+                              <ExternalLink className="w-3 h-3" />
+                            </a>
+                          )}
+                        </div>
+                      </>
+                    );
+                  })()}
                 </div>
               )}
             </div>
@@ -407,6 +491,18 @@ export const CourseDetailModal: React.FC<Props> = ({
                         <h5 className="text-xs font-bold text-slate-900 dark:text-white">
                           {mod.title}
                         </h5>
+                        {mod.is_custom && (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-cyan-100 dark:bg-cyan-950 text-cyan-800 dark:text-cyan-200 font-semibold border border-cyan-300 dark:border-cyan-800 flex items-center space-x-1">
+                            <Sparkles className="w-2.5 h-2.5 text-cyan-600 dark:text-cyan-400" />
+                            <span>Trainer Upload</span>
+                          </span>
+                        )}
+                        {mod.video_url && (
+                          <span className="text-[10px] px-2 py-0.5 rounded-full bg-indigo-50 dark:bg-indigo-950/60 text-indigo-700 dark:text-indigo-300 font-medium border border-indigo-200 dark:border-indigo-800 flex items-center space-x-1">
+                            <Video className="w-2.5 h-2.5" />
+                            <span>Video Lecture</span>
+                          </span>
+                        )}
                         {mod.is_completed ? (
                           <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 font-semibold flex items-center space-x-1">
                             <CheckCircle className="w-3 h-3 text-emerald-600 dark:text-emerald-400" />

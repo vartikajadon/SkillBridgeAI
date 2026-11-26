@@ -734,8 +734,13 @@ Rule 62(3) of GFR strictly prohibits the rush of expenditure in the closing mont
 }
 
 
-def get_course_video_modules(course: Course, progress_pct: Optional[int] = None) -> List[CourseVideoModuleItem]:
-    """Returns at least 5 structured video modules with descriptions and durations for a course."""
+def get_course_video_modules(
+    course: Course,
+    progress_pct: Optional[int] = None,
+    db: Optional[Session] = None,
+) -> List[CourseVideoModuleItem]:
+    """Returns at least 5 structured video modules with descriptions and durations for a course,
+    plus any custom learning modules published by trainers."""
     code = (course.code or "").strip().upper()
     raw_modules = COURSE_VIDEO_MODULES_CATALOG.get(code)
 
@@ -750,6 +755,8 @@ def get_course_video_modules(course: Course, progress_pct: Optional[int] = None)
                 "description": f"Comprehensive introduction to administrative guidelines, operational policies, and key public service standards in {title}.",
                 "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4",
                 "content": f"### Module 1: Orientation & Frameworks of {title}\n\n#### 1. Executive Summary\nThis module introduces the governance principles, administrative scope, and statutory responsibilities governing {title}.\n\n#### 2. Key Concepts & Statutory Frameworks\n- Foundational rules and mandate of the department under official Business Allocation Rules.\n- Integration with public digital infrastructure, citizen charter commitments, and accountability standards.\n\n#### 3. Practical Civil Service Guide\n- Adhere to standard secretariat operating procedures and maintain auditable records for all administrative decisions.",
+                "skills_covered": [],
+                "is_custom": False,
             },
             {
                 "module_number": 2,
@@ -758,6 +765,8 @@ def get_course_video_modules(course: Course, progress_pct: Optional[int] = None)
                 "description": f"Hands-on walkthrough of standard operating procedures, essential software tools, and workflow systems applied in {title}.",
                 "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ElephantsDream.mp4",
                 "content": f"### Module 2: Practical Implementation & Tools for {title}\n\n#### 1. Core Operating Systems\nWalkthrough of digital registries, file tracking modules, and departmental reporting dashboards used in {title}.\n\n#### 2. Standard Operating Procedures (SOPs)\n- Scrutiny checklist for incoming departmental files and citizen submissions.\n- Automated validation protocols and verification checkpoints.",
+                "skills_covered": [],
+                "is_custom": False,
             },
             {
                 "module_number": 3,
@@ -766,6 +775,8 @@ def get_course_video_modules(course: Course, progress_pct: Optional[int] = None)
                 "description": f"Real-world governance case studies, district-level problem solving, and inter-departmental collaboration models in {title}.",
                 "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerBlazes.mp4",
                 "content": f"### Module 3: Case Studies & Government Best Practices\n\n#### 1. Field Case Study\nAnalysis of successful district-level project execution, bottleneck resolution, and inter-agency coordination.\n\n#### 2. Lessons Learned\n- Importance of early stakeholder alignment and continuous monitoring against baseline indicators.",
+                "skills_covered": [],
+                "is_custom": False,
             },
             {
                 "module_number": 4,
@@ -774,6 +785,8 @@ def get_course_video_modules(course: Course, progress_pct: Optional[int] = None)
                 "description": f"Statutory regulations, audit trail maintenance, security protocols, and ethical governance standards for {title}.",
                 "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerEscapes.mp4",
                 "content": f"### Module 4: Statutory Compliance, Ethics & Quality Assurance\n\n#### 1. Ethical Governance & Vigilance\n- Code of conduct for civil servants and adherence to public accountability canons.\n- Regular internal audit inspections and risk mitigation strategies.\n\n#### 2. Data Security & Citizen Privacy\n- Proper storage and encryption of public records and citizen data.",
+                "skills_covered": [],
+                "is_custom": False,
             },
             {
                 "module_number": 5,
@@ -782,6 +795,8 @@ def get_course_video_modules(course: Course, progress_pct: Optional[int] = None)
                 "description": f"Executive summary preparation, final project synthesis, competency assessment review, and field deployment roadmaps.",
                 "video_url": "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/ForBiggerFun.mp4",
                 "content": f"### Module 5: Executive Synthesis, Assessment & Practical Application\n\n#### 1. Synthesis & Action Roadmaps\n- Formulating policy briefs, administrative notes, and implementation plans for senior ministry leadership.\n- Post-training field application and continuous professional development under the FRAC framework.",
+                "skills_covered": [],
+                "is_custom": False,
             },
         ]
     else:
@@ -789,7 +804,25 @@ def get_course_video_modules(course: Course, progress_pct: Optional[int] = None)
         raw_modules = [dict(m) for m in raw_modules]
 
     # Append custom modules added and published by trainers
-    custom_modules = getattr(course, "modules", None)
+    custom_modules = None
+    if db is not None:
+        try:
+            from app.models.course import CourseModule
+            custom_modules = (
+                db.query(CourseModule)
+                .filter(
+                    CourseModule.course_id == course.id,
+                    CourseModule.is_published == True,
+                )
+                .order_by(CourseModule.module_number.asc())
+                .all()
+            )
+        except Exception:
+            pass
+
+    if custom_modules is None:
+        custom_modules = getattr(course, "modules", [])
+
     if custom_modules:
         next_num = len(raw_modules) + 1
         for cm in custom_modules:
@@ -801,6 +834,8 @@ def get_course_video_modules(course: Course, progress_pct: Optional[int] = None)
                     "description": cm.description or "",
                     "video_url": cm.video_url,
                     "content": cm.content or "",
+                    "skills_covered": cm.skills_covered or [],
+                    "is_custom": True,
                 })
                 next_num += 1
 
@@ -821,6 +856,8 @@ def get_course_video_modules(course: Course, progress_pct: Optional[int] = None)
                 video_url=mod.get("video_url"),
                 is_completed=is_completed,
                 content=mod.get("content"),
+                skills_covered=mod.get("skills_covered"),
+                is_custom=mod.get("is_custom", False),
             )
         )
     return items
@@ -1112,7 +1149,7 @@ def get_personalized_recommendations(
                     is_enrolled=is_enrolled,
                     enrollment_status=enroll_status,
                     progress_percentage=progress_pct,
-                    modules=get_course_video_modules(course, progress_pct),
+                    modules=get_course_video_modules(course, progress_pct, db=db),
                 )
             )
 

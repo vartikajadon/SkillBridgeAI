@@ -12,6 +12,7 @@ import {
   Check,
   CheckCircle,
   Clock,
+  ExternalLink,
   Eye,
   EyeOff,
   FileCheck,
@@ -29,6 +30,21 @@ import {
   Video,
   X,
 } from 'lucide-react';
+import { apiUrl } from '../../lib/api';
+
+const resolveVideoUrl = (rawUrl?: string | null): string => {
+  if (!rawUrl || !rawUrl.trim()) return '';
+  const clean = rawUrl.trim();
+  if (clean.startsWith('http://') || clean.startsWith('https://')) return clean;
+  return apiUrl(clean);
+};
+
+const getYouTubeEmbedUrl = (url: string): string | null => {
+  if (!url) return null;
+  const regExp = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/;
+  const match = url.match(regExp);
+  return match && match[1] ? `https://www.youtube.com/embed/${match[1]}?autoplay=0&rel=0` : null;
+};
 
 interface Props {
   sessionToken: string;
@@ -52,6 +68,7 @@ export const DocumentUploadView: React.FC<Props> = ({
   const [selectedCourseId, setSelectedCourseId] = useState<string>('');
   const [moduleTitle, setModuleTitle] = useState<string>('');
   const [moduleDescription, setModuleDescription] = useState<string>('');
+  const [moduleContent, setModuleContent] = useState<string>('');
   const [durationMinutes, setDurationMinutes] = useState<number>(20);
 
   // Multi-skill selection state
@@ -63,6 +80,7 @@ export const DocumentUploadView: React.FC<Props> = ({
   const [selectedVideoFile, setSelectedVideoFile] = useState<File | null>(null);
   const [videoUrlInput, setVideoUrlInput] = useState<string>('');
   const [isPublished, setIsPublished] = useState<boolean>(true);
+  const [previewModuleId, setPreviewModuleId] = useState<string | null>(null);
 
   // Submission feedback
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
@@ -220,6 +238,9 @@ export const DocumentUploadView: React.FC<Props> = ({
     if (moduleDescription.trim()) {
       formData.append('description', moduleDescription.trim());
     }
+    if (moduleContent.trim()) {
+      formData.append('content', moduleContent.trim());
+    }
     formData.append('duration_minutes', String(durationMinutes || 20));
 
     if (selectedSkillCodes.length > 0) {
@@ -262,10 +283,12 @@ export const DocumentUploadView: React.FC<Props> = ({
       // Reset form
       setModuleTitle('');
       setModuleDescription('');
+      setModuleContent('');
       setSelectedDocFile(null);
       setSelectedVideoFile(null);
       setVideoUrlInput('');
       setSelectedSkillCodes([]);
+      setPreviewModuleId(newModule.id);
 
       // Refresh course modules and documents
       fetchModulesForCourse(selectedCourseId);
@@ -462,6 +485,21 @@ export const DocumentUploadView: React.FC<Props> = ({
                 onChange={(e) => setModuleDescription(e.target.value)}
                 disabled={isSubmitting}
                 className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition"
+              />
+            </div>
+
+            <div className="md:col-span-3 space-y-1.5">
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 flex items-center justify-between">
+                <span>Direct Learning Material & Content Notes (Optional)</span>
+                <span className="text-[10px] text-slate-400">Markdown and plain text supported</span>
+              </label>
+              <textarea
+                rows={3}
+                placeholder="Enter rich study notes, checklists, policy guidelines, or references that will show directly on this course for learners..."
+                value={moduleContent}
+                onChange={(e) => setModuleContent(e.target.value)}
+                disabled={isSubmitting}
+                className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-300 dark:border-slate-800 rounded-xl px-3.5 py-2 text-xs text-slate-900 dark:text-white placeholder-slate-400 dark:placeholder-slate-500 focus:outline-none focus:border-cyan-500 transition font-mono"
               />
             </div>
           </div>
@@ -727,79 +765,179 @@ export const DocumentUploadView: React.FC<Props> = ({
                     key={m.id}
                     className="p-4 bg-slate-50 dark:bg-slate-950/50 hover:bg-slate-100/60 dark:hover:bg-slate-800/40 border border-slate-200 dark:border-slate-800 rounded-xl flex flex-col md:flex-row md:items-center justify-between gap-3 transition"
                   >
-                    <div className="space-y-1">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-xs font-bold text-cyan-600 dark:text-cyan-400 font-mono">
-                          Module {m.module_number}:
-                        </span>
-                        <h4 className="text-xs font-bold text-slate-900 dark:text-white">
-                          {m.title}
-                        </h4>
-                        <span
-                          className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${
-                            m.is_published
-                              ? 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800'
-                              : 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800'
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                      <div className="space-y-1">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-xs font-bold text-cyan-600 dark:text-cyan-400 font-mono">
+                            Module {m.module_number}:
+                          </span>
+                          <h4 className="text-xs font-bold text-slate-900 dark:text-white">
+                            {m.title}
+                          </h4>
+                          <span
+                            className={`text-[10px] px-2 py-0.5 rounded-full font-semibold border ${
+                              m.is_published
+                                ? 'bg-emerald-100 text-emerald-800 border-emerald-300 dark:bg-emerald-950 dark:text-emerald-300 dark:border-emerald-800'
+                                : 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950 dark:text-amber-300 dark:border-amber-800'
+                            }`}
+                          >
+                            {m.is_published ? 'Live to Learners' : 'Draft'}
+                          </span>
+                        </div>
+
+                        {m.description && (
+                          <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1">
+                            {m.description}
+                          </p>
+                        )}
+
+                        <div className="flex flex-wrap items-center gap-2 pt-1 text-[10px] text-slate-500 dark:text-slate-400">
+                          <span className="flex items-center space-x-1">
+                            <Clock className="w-3 h-3 text-slate-400" />
+                            <span>{m.duration_minutes} mins</span>
+                          </span>
+                          {m.video_url && (
+                            <span className="flex items-center space-x-1 text-cyan-600 dark:text-cyan-400 font-medium">
+                              <Video className="w-3 h-3" />
+                              <span>Supporting Video Attached</span>
+                            </span>
+                          )}
+                          {m.document_title && (
+                            <span className="flex items-center space-x-1 text-slate-700 dark:text-slate-300">
+                              <FileText className="w-3 h-3 text-cyan-500" />
+                              <span>Doc: {m.document_title}</span>
+                            </span>
+                          )}
+                          {m.skills_covered && m.skills_covered.length > 0 && (
+                            <div className="flex items-center space-x-1">
+                              <Award className="w-3 h-3 text-amber-500" />
+                              <span>Skills: {m.skills_covered.join(', ')}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="flex items-center space-x-2 self-end sm:self-auto shrink-0">
+                        <button
+                          type="button"
+                          onClick={() => setPreviewModuleId(previewModuleId === m.id ? null : m.id)}
+                          className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition flex items-center space-x-1 ${
+                            previewModuleId === m.id
+                              ? 'bg-cyan-600 text-white border-cyan-600'
+                              : 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-cyan-600 dark:text-cyan-400 hover:bg-cyan-50 dark:hover:bg-cyan-950/40'
                           }`}
+                          title="Preview Module Video & Content"
                         >
-                          {m.is_published ? 'Live to Learners' : 'Draft'}
-                        </span>
+                          <Video className="w-3.5 h-3.5" />
+                          <span>{previewModuleId === m.id ? 'Hide Preview' : 'Preview Video & Content'}</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleTogglePublishModule(m.id, m.is_published)}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition flex items-center space-x-1 ${
+                            m.is_published
+                              ? 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100'
+                              : 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-500 shadow-sm'
+                          }`}
+                          title={m.is_published ? 'Unpublish from learners' : 'Publish to learners'}
+                        >
+                          {m.is_published ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
+                          <span>{m.is_published ? 'Unpublish' : 'Publish'}</span>
+                        </button>
+
+                        <button
+                          onClick={() => handleDeleteModule(m.id, m.title)}
+                          className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-lg transition"
+                          title="Delete Module"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
                       </div>
+                    </div>
 
-                      {m.description && (
-                        <p className="text-[11px] text-slate-500 dark:text-slate-400 line-clamp-1">
-                          {m.description}
-                        </p>
-                      )}
-
-                      <div className="flex flex-wrap items-center gap-2 pt-1 text-[10px] text-slate-500 dark:text-slate-400">
-                        <span className="flex items-center space-x-1">
-                          <Clock className="w-3 h-3 text-slate-400" />
-                          <span>{m.duration_minutes} mins</span>
-                        </span>
-                        {m.video_url && (
-                          <span className="flex items-center space-x-1 text-cyan-600 dark:text-cyan-400 font-medium">
-                            <Video className="w-3 h-3" />
-                            <span>Supporting Video Attached</span>
-                          </span>
-                        )}
-                        {m.document_title && (
-                          <span className="flex items-center space-x-1 text-slate-700 dark:text-slate-300">
-                            <FileText className="w-3 h-3 text-cyan-500" />
-                            <span>Doc: {m.document_title}</span>
-                          </span>
-                        )}
-                        {m.skills_covered && m.skills_covered.length > 0 && (
-                          <div className="flex items-center space-x-1">
-                            <Award className="w-3 h-3 text-amber-500" />
-                            <span>Skills: {m.skills_covered.join(', ')}</span>
+                    {/* Expandable Video & Content Preview for this module */}
+                    {previewModuleId === m.id && (
+                      <div className="mt-3 pt-3 border-t border-slate-200 dark:border-slate-800 space-y-4 bg-white dark:bg-slate-900 rounded-xl p-4 shadow-inner">
+                        <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2">
+                          <div className="flex items-center space-x-2">
+                            <Film className="w-4 h-4 text-cyan-600 dark:text-cyan-400" />
+                            <span className="text-xs font-bold text-slate-900 dark:text-white">
+                              Module #{m.module_number} Media & Content Preview
+                            </span>
                           </div>
-                        )}
+                          <span className="text-[11px] text-slate-500 font-mono">
+                            {m.duration_minutes} Mins Duration
+                          </span>
+                        </div>
+
+                        {/* Video Player */}
+                        <div className="space-y-1.5">
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center space-x-1.5">
+                              <Video className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                              <span>Uploaded / Supporting Video</span>
+                            </span>
+                            {m.video_url && (
+                              <a
+                                href={resolveVideoUrl(m.video_url)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[11px] text-cyan-600 dark:text-cyan-400 hover:underline flex items-center space-x-1 font-medium"
+                              >
+                                <span>Open Video Link</span>
+                                <ExternalLink className="w-3 h-3" />
+                              </a>
+                            )}
+                          </div>
+
+                          {m.video_url ? (
+                            (() => {
+                              const vUrl = resolveVideoUrl(m.video_url);
+                              const ytEmbed = getYouTubeEmbedUrl(vUrl);
+                              return (
+                                <div className="relative rounded-xl overflow-hidden bg-slate-950 aspect-video max-w-xl mx-auto border border-slate-200 dark:border-slate-800 shadow-md flex items-center justify-center">
+                                  {ytEmbed ? (
+                                    <iframe
+                                      src={ytEmbed}
+                                      title={m.title}
+                                      className="w-full h-full rounded-xl border-0"
+                                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                                      allowFullScreen
+                                    />
+                                  ) : (
+                                    <video
+                                      key={vUrl}
+                                      controls
+                                      playsInline
+                                      preload="metadata"
+                                      className="w-full h-full object-cover rounded-xl"
+                                      src={vUrl}
+                                    >
+                                      Your browser does not support HTML5 video streaming.
+                                    </video>
+                                  )}
+                                </div>
+                              );
+                            })()
+                          ) : (
+                            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-950/60 border border-slate-200 dark:border-slate-800 text-center text-xs text-slate-500 italic">
+                              No video attached to this module.
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Learning Content & Study Notes */}
+                        <div className="space-y-1.5 pt-1">
+                          <label className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center space-x-1.5">
+                            <FileText className="w-3.5 h-3.5 text-cyan-600 dark:text-cyan-400" />
+                            <span>Learning Material / Study Notes</span>
+                          </label>
+                          <div className="p-3 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-xl text-xs leading-relaxed text-slate-700 dark:text-slate-300 whitespace-pre-line max-h-60 overflow-y-auto select-text font-sans shadow-sm">
+                            {m.content || m.description || 'No written text provided for this module.'}
+                          </div>
+                        </div>
                       </div>
-                    </div>
-
-                    <div className="flex items-center space-x-2 self-end md:self-auto shrink-0">
-                      <button
-                        onClick={() => handleTogglePublishModule(m.id, m.is_published)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-semibold border transition flex items-center space-x-1 ${
-                          m.is_published
-                            ? 'bg-white dark:bg-slate-900 border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100'
-                            : 'bg-emerald-600 text-white border-emerald-600 hover:bg-emerald-500 shadow-sm'
-                        }`}
-                        title={m.is_published ? 'Unpublish from learners' : 'Publish to learners'}
-                      >
-                        {m.is_published ? <EyeOff className="w-3 h-3" /> : <Eye className="w-3 h-3" />}
-                        <span>{m.is_published ? 'Unpublish' : 'Publish to Learners'}</span>
-                      </button>
-
-                      <button
-                        onClick={() => handleDeleteModule(m.id, m.title)}
-                        className="p-1.5 hover:bg-slate-200 dark:hover:bg-slate-800 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 rounded-lg transition"
-                        title="Delete Module"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
+                    )}
                   </div>
                 ))
               )}

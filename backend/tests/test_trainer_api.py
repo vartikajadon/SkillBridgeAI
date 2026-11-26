@@ -500,6 +500,9 @@ def test_trainer_upload_learning_module_with_video_and_skills():
     custom_mod = next((m for m in learner_mods if "Advanced Macroeconomic" in m["title"]), None)
     assert custom_mod is not None
     assert custom_mod["video_url"] == "https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/TearsOfSteel.mp4"
+    assert custom_mod["content"] is not None
+    assert "Advanced Policy Analysis" in custom_mod["content"]
+    assert custom_mod["is_custom"] is True
 
 
 def test_learner_quiz_locked_until_100_percent_course_completion():

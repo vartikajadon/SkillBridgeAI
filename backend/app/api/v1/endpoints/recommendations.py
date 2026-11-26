@@ -93,7 +93,7 @@ def get_course_modules(
         Enrollment.course_id == course_id,
     ).first()
     progress_pct = enrollment.progress_percentage if enrollment else None
-    return get_course_video_modules(course, progress_pct)
+    return get_course_video_modules(course, progress_pct, db=db)
 
 
 @router.post(
@@ -145,7 +145,7 @@ def complete_course_module(
         db.refresh(enrollment)
 
     # Get modules count
-    all_modules = get_course_video_modules(course, enrollment.progress_percentage)
+    all_modules = get_course_video_modules(course, enrollment.progress_percentage, db=db)
     total_modules = len(all_modules) or 5
 
     # Each module is worth (100 / total_modules) %
